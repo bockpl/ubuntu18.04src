@@ -1,0 +1,14 @@
+# Root disk device:
+export DISKDEV="/dev/sda"
+
+# Root volume group
+export VG_NAME=vgroot
+
+# File with default volumes
+export VOLUMES_FILE=${ROOTSTANDARD}/${BOCMDIR}/volumes
+
+# Manual disk menagement
+export MANUAL_DISK_MANAGE="no"
+
+# If you want rsync --delete:
+export CCRSYNCDELETE="yes"

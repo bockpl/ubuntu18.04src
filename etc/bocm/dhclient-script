@@ -1,0 +1,41 @@
+#!/bin/sh
+#old_subnet_mask=255.255.248.0
+#old_domain_name_servers=10.76.232.101 10.76.232.102
+#old_broadcast_address=10.76.239.255
+#old_expiry=1266966093
+#new_subnet_mask=255.255.248.0
+#new_domain_name=example.com
+#OLDPWD=/etc/sysconfig/network-scripts
+#new_ip_address=10.76.237.100
+#new_network_number=10.76.232.0
+#interface=eth0
+#reason=RENEW
+#old_dhcp_message_type=5
+#new_expiry=1266966798
+#PATH=/sbin:/usr/sbin:/bin:/usr/bin
+#new_dhcp_lease_time=1800
+#pid=3135
+#new_dhcp_server_identifier=10.76.232.102
+#PWD=/etc/sysconfig/network-scripts
+#LANG=en_US.UTF-8
+#new_routers=10.76.232.1
+#new_domain_name_servers=10.76.232.101 10.76.232.102
+#SHLVL=1
+#old_dhcp_server_identifier=10.76.232.102
+#new_dhcp_message_type=5
+#old_ip_address=10.76.237.100
+#old_dhcp_lease_time=1800
+#new_broadcast_address=10.76.239.255
+#old_network_number=10.76.232.0
+#old_routers=10.76.232.1
+#old_domain_name=example.com
+
+if [ $reason = "BOUND" ]; then
+  ip addr add $new_ip_address/$new_subnet_mask broadcast $new_broadcast_address dev $interface
+fi
+
+if [ $reason = "RELEASE" ]; then
+  ip addr flush $interface
+  ip link set $interface down
+fi
+

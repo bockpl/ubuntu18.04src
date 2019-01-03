@@ -1,0 +1,12 @@
+# Name:Mounting_point:Size:File_System:RAID1?
+# Name - name of logical volume
+# Mounting_point - mount point or word swap for swap partition 
+# Size - Size of logical volume in GB. If Name is "swap" and Size is 0 then script uses default algoritm for calculate volume size.
+# File_System - Type of filesystem xfs, ext4
+# RAID1? - RAID1 or N
+#
+# UWAGA: Wolumin o wielkosci 0 bedzie rozszerzany do 100 pojemnosci dysku, musi byc na koncu listy!
+
+lvswap:swap:0::RAID1
+lvroot:/:4g:xfs:RAID1
+lvchunk:/mnt/lvchunk:0:xfs:N

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+MNT=/mnt
+NEW_VERSION=$1
+
+apt autoremove
+apt clean
+
+. /etc/bocm/template
+OLD_VERSION=$VERSION
+
+nano /etc/bocm/template
+
+. /etc/bocm/template
+
+mfsmount -S obrazy/KOPL $MNT
+if [ -d $MNT/template$VERSION ]; then
+  echo "Katalog $MNT/template$VERSION juz istnieje. Czy nadpisac?"
+  select A in Tak Nie; do
+    case $A in
+      'Tak') break ;;
+      *) umount $MNT; exit ;;
+    esac
+  break
+  done
+else
+  mkdir $MNT/template$VERSION
+fi
+cp -a /media/root-rw/overlay/* $MNT/template$VERSION/
+if ! [ -d $MNT/template$VERSION/etc ]; then
+  mkdir $MNT/template$VERSION/etc
+fi
+cp -a /media/root-ro/etc/fstab $MNT/template$VERSION/etc/
+ln -f $MNT/template$OLD_VERSION/vmlinuz $MNT/template$VERSION/
+ln -f $MNT/template$OLD_VERSION/initrd.img $MNT/template$VERSION/
+
+VMLINUZ=$(readlink -f $MNT/template$OLD_VERSION/vmlinuz)
+INITRD=$(readlink -f $MNT/template$OLD_VERSION/initrd.img)
+
+if ! [ -d $MNT/template$VERSION/boot ]; then
+  mkdir $MNT/template$VERSION/boot
+fi
+ln -f $VMLINUZ $MNT/template$VERSION/boot/
+ln -f $INITRD $MNT/template$VERSION/boot/
+
+cp -a /etc/overlayroot.conf $MNT/template$VERSION/etc/
+sed -iE 's/overlayroot=.*/overlayroot=""/g' $MNT/template$VERSION/etc/overlayroot.conf
+
+umount $MNT
