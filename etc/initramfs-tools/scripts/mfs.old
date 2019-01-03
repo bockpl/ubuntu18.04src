@@ -1,0 +1,75 @@
+# NFS filesystem mounting			-*- shell-script -*-
+
+# FIXME This needs error checking
+
+retry_nr=0
+
+. /scripts/custom_functions
+
+# parse nfs bootargs and mount nfs
+do_mfsmount()
+{
+	configure_mfs_network eth1
+	
+	mount_rootstandard
+	
+	if ! [ -d "$rootmnt$UPPERDIR" ]; then
+                mkdir -p "$rootmnt$UPPERDIR" || panic "Error under creating $rootmnt$UPPERDIR directory!"
+        fi
+        if ! [ -d "$rootmnt$LOWERDIR" ]; then
+                mkdir -p "$rootmnt$LOWERDIR" || panic "Error under creating $rootmnt$LOWERDIR directory!"
+        fi
+
+	mount --move "${ROOTSTANDARD}" "$rootmnt" 
+	mount --move "$UPPERDIR" "$rootmnt$UPPERDIR"
+	mount --move "$LOWERDIR" "$rootmnt$LOWERDIR"
+
+	. ${rootmnt}/${BOCMDIR}/functions.sh
+        make_network_config_file
+	
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/mfs-premount"
+	run_scripts /scripts/mfs-premount
+	[ "$quiet" != "y" ] && log_end_msg
+
+	if [ ${readonly} = y ]; then
+		roflag="ro"
+	else
+		roflag="rw"
+	fi
+
+	mount -o remount,suid,dev,exec "$rootmnt$UPPERDIR"
+        mount -o remount,suid,dev,exec "$rootmnt$LOWERDIR"
+	
+	mount -o remount,${roflag},suid,dev,exec "$rootmnt"
+	#nfsmount -o nolock ${roflag} ${NFSOPTS} ${NFSROOT} ${rootmnt}
+}
+
+# NFS root mounting
+mountroot()
+{
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/mfs-top"
+	run_scripts /scripts/mfs-top
+	[ "$quiet" != "y" ] && log_end_msg
+
+	# For DHCP
+	modprobe af_packet
+
+	wait_for_udev 10
+
+	# Default delay is around 180s
+	delay=${ROOTDELAY:-180}
+
+	# loop until nfsmount succeeds
+	do_mfsmount
+	#while [ ${retry_nr} -lt ${delay} ] && [ ! -e ${rootmnt}${init} ]; do
+	#	[ "$quiet" != "y" ] && log_begin_msg "Retrying mfs mount"
+	#	/bin/sleep 1
+	#	do_mfsmount
+	#	retry_nr=$(( ${retry_nr} + 1 ))
+	#	[ "$quiet" != "y" ] && log_end_msg
+	#done
+
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/mfs-bottom"
+	run_scripts /scripts/mfs-bottom
+	[ "$quiet" != "y" ] && log_end_msg
+}

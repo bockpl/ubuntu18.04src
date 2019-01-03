@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TEMPLATE=$(basename $(pwd))
+source global
 
 read -p "Czy budowac obraz ${TEMPLATE}? (t/n): " ANS
 if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then

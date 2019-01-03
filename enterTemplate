@@ -1,12 +1,11 @@
 #!/bin/bash
 
-TEMPLATE=$(basename $(pwd))
+source global
+
 read -p "Czy wejsc do kontenera ${TEMPLATE}? (t/n):" ANS
 if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
   exit
 fi
-
-RUNOPT="--name ${TEMPLATE} -it -v $(pwd)/etc/bocm:/etc/bocm"
 
 if ! docker ps -a|grep -q ${TEMPLATE}; then 
   docker run ${RUNOPT} ${TEMPLATE}:latest

@@ -1,0 +1,130 @@
+# -*- shell-script -*-
+
+# Nadpisane funkcje wyświetlania komunikatow dla wiekszej ich czytelnosci
+#_log_msg()
+#{
+#        if [ "$quiet" = "y" ]; then return; fi
+#        printf "\n$@"
+#}
+
+# Funkcja uruchamiania polecen zewnętrzych
+_run() {
+  RESULT=$(eval "$@ 2>&1")
+  RET=$?
+  if [ $RET != 0 ]; then
+    echo $RESULT
+    echo "Exit status: $RET"
+    panic "Error in command: $@"
+  fi
+}
+
+configure_mfs_network() {
+	local DHCPLIBPATH="/var/lib/dhcp"
+
+        # configure_mfs_networking(ifname)
+        local IFNAME="$1"
+
+	# VLAN detect
+	local VLAN=${IFNAME##*.}
+	if [ $VLAN = $IFNAME ]; then
+		VLAN=""
+	else
+		local BASE_IFNAME=${IFNAME%%.*}
+		_run "vconfig add $BASE_IFNAME $VLAN"
+	fi
+
+        _run "ip link set dev $IFNAME up"
+        _run "ip link set lo up"
+        if ! [ -d $DHCPLIBPATH ]; then
+		_run "mkdir -p $DHCPLIBPATH"
+	fi
+        _run "dhclient -pf $DHCP_MFS_PID $IFNAME"
+}
+
+unconfigure_mfs_network() {
+	# unconfigure_mfs_network(ifname)
+	local IFNAME="$1"
+
+	# VLAN detect
+        local VLAN=${IFNAME##*.}
+        if [ $VLAN != $IFNAME ]; then
+		_run "vconfig rem $IFNAME"
+	else
+		#_run "ip addr flush $IFNAME"
+	        #_run "ip link set $IFNAME down"
+		#_run "kill $(cat $DHCP_MFS_PID)"
+		# Zamyka dhclient ktory podczas zamykania wykonuje polecenia ze skryptu /etc/bocm/dhclient_script czyszczac przypisania IP
+		_run "dhclient -r -pf $DHCP_MFS_PID $IFNAME"
+	fi
+	_run "ip link set lo down"
+}
+
+parse_option_file() {
+  local FILE=$1
+  
+# Po wyjściu spodziewane zmienne VERSION i LOWER
+  local OIFS=$IFS
+  IFS=$(echo -en "\n")
+
+  while read -r LINE
+  do
+    if [ "$(printf "%.1s" $LINE)" != '#' ] && [ "$(printf "%.1s" $LINE)" != "$(echo -en "\n")" ]; then
+      export "${LINE%%=*}"="${LINE##*=}"
+    fi
+  done < $FILE
+  IFS=$OIFS
+}
+
+mount_rootstandard() {
+
+# Sample VAR values
+# MFSUPPER = eth1:192.168.8.2:/obrazy/KOPL/template16.1.0
+# MFSINT = eth1
+# MFSMASTER = 192.168.8.2
+# MFSPATH = /obrazy/KOPL
+# OVUPPER = template16.1.0
+
+	local OLDDIR=""
+	local HOSTNAME=$(hostname)
+	local CONFIGS_DIR="CONFIGS/$HOSTNAME"
+
+        if ! [ -d ${ROOTSTANDARD} ]; then
+          mkdir -p ${ROOTSTANDARD} || panic "mkdir ${ROOTSTANDARD} failed"
+        fi
+
+        if [ -n "$MFSUPPER" ]; then
+                mkdir -p "$MFSDIR" || panic "Error under creating $MFSDIR directory!"
+
+                mfsmount -H "$MFSMASTER" -S "$MFSPATH" -o ro,suid,dev,exec "$MFSDIR" || panic "Mounting problem mfs dir $MFSPATH!"
+
+		parse_option_file $MFSDIR/$OVUPPER/${TEMPLATEPATH}
+                OVLOWER=$LOWER
+
+maybe_break parse
+
+		OLDDIR=$(pwd)
+		cd $MFSDIR
+
+		if [ "x$CONFIGS_DIR" != 'x' ] && [ -d "$CONFIGS_DIR" ]; then
+		  LOWERDIR="$CONFIGS_DIR:"
+		fi
+
+		if [[ -z ${OVLOWER} ]]; then
+		  LOWERDIR="${LOWERDIR}${OVUPPER}:${OVUPPER}"
+		else
+		  LOWERDIR="${LOWERDIR}${OVUPPER}:${OVLOWER}"
+		fi
+		mount -t overlayfs overlayfs -o ro,lowerdir=$LOWERDIR ${ROOTSTANDARD} > /dev/null 2>&1 \
+		  || panic "Error mounting overlayfs root directory!"
+		cd $OLDDIR
+        else
+                panic "Variable $MFSUPPER not set!"
+        fi
+}
+
+umount_rootstandard() {
+        _run "umount $ROOTSTANDARD"
+	_run "rmdir $ROOTSTANDARD"
+        _run "umount $MFSDIR"
+	_run "rmdir $MFSDIR"
+}

@@ -7,8 +7,8 @@ RUN echo y|unminimize -y \
 
 RUN sed -i -e 's/root:\*/root:$6$MpxiqUwV$grZXHjiqaj2YmDgoJprGSij3v62DdE5tWMrRAmzDX7Pifrt2G8IwDz91Pq7k2wsEVE1hheyVNz.K9U2ZR0POT0/g' /etc/shadow
 
-ADD etc/bocm /etc/bocm
-RUN rm -rf /etc/initramfs-tools && ln -s /etc/bocm/initramfs-tools /etc/initramfs-tools
+#ADD etc/bocm /etc/bocm
+#RUN rm -rf /etc/initramfs-tools && ln -s /etc/bocm/initramfs-tools /etc/initramfs-tools
 
 # Dodanie obslugi zfs-a
 RUN apt install -y zfs-initramfs

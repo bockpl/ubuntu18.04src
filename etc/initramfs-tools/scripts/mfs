@@ -1,0 +1,55 @@
+# NFS filesystem mounting			-*- shell-script -*-
+
+# FIXME This needs error checking
+
+retry_nr=0
+
+. /scripts/custom_functions
+
+# parse nfs bootargs and mount nfs
+do_mfsmount()
+{
+	configure_mfs_network eth1
+
+panic "Test"
+
+	test -d /tmp/mfs || mkdir -p /tmp/mfs
+	mfsmount -H 192.168.8.2 -S /obrazy/KOPL -o suid,dev,exec /tmp/mfs
+	mount -t overlayfs overlayfs -o lowerdir=/tmp/mfs/blade_template15.1.4,upperdir=/tmp/mfs/template16.1.0 /root
+	mount --move /tmp/mfs /root/media/work
+panic "Test"
+	. ${rootmnt}/${BOCMDIR}/functions.sh
+        make_network_config_file
+
+	mount -o remount,ro /root
+}
+
+# NFS root mounting
+mountroot()
+{
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/mfs-top"
+	run_scripts /scripts/mfs-top
+	[ "$quiet" != "y" ] && log_end_msg
+
+	# For DHCP
+	modprobe af_packet
+
+	wait_for_udev 10
+
+	# Default delay is around 180s
+	delay=${ROOTDELAY:-180}
+
+	# loop until nfsmount succeeds
+	do_mfsmount
+	#while [ ${retry_nr} -lt ${delay} ] && [ ! -e ${rootmnt}${init} ]; do
+	#	[ "$quiet" != "y" ] && log_begin_msg "Retrying mfs mount"
+	#	/bin/sleep 1
+	#	do_mfsmount
+	#	retry_nr=$(( ${retry_nr} + 1 ))
+	#	[ "$quiet" != "y" ] && log_end_msg
+	#done
+
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/mfs-bottom"
+	run_scripts /scripts/mfs-bottom
+	[ "$quiet" != "y" ] && log_end_msg
+}
