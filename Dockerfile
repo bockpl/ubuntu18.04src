@@ -10,6 +10,13 @@ RUN sed -i -e 's/root:\*/root:$6$MpxiqUwV$grZXHjiqaj2YmDgoJprGSij3v62DdE5tWMrRAm
 ADD etc/bocm /etc/bocm
 RUN rm -rf /etc/initramfs-tools && ln -s /etc/bocm/initramfs-tools /etc/initramfs-tools
 
+# Dodanie obslugi zfs-a
+RUN apt install -y zfs-initramfs
+
+# Czyzczenie APT-a
+RUN apt -y autoremove
+RUN apt clean
+
 # Aktualizacja initramfs na zgodny z bocm
 RUN update-initramfs -c -k all
 

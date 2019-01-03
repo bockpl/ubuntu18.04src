@@ -1,0 +1,22 @@
+#!/bin/bash
+
+TEMPLATE=$(basename $(pwd))
+read -p "Czy wejsc do kontenera ${TEMPLATE}? (t/n):" ANS
+if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
+  exit
+fi
+
+RUNOPT="--name ${TEMPLATE} -it -v $(pwd)/etc/bocm:/etc/bocm"
+
+if ! docker ps -a|grep -q ${TEMPLATE}; then 
+  docker run ${RUNOPT} ${TEMPLATE}:latest
+else
+  if docker ps -a|grep ${TEMPLATE}|grep -q "Exited"; then
+    docker start -ai ${TEMPLATE}
+  else
+    docker attach -i ${TEMPLATE}
+  fi
+fi
+
+docker stop ${TEMPLATE}
+docker rm ${TEMPLATE}
