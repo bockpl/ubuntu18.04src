@@ -8,9 +8,10 @@ if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
 fi
 
 docker build -t ${TEMPLATE}:latest ./ \
-&& docker run --name ${TEMPLATE} -d ${TEMPLATE}:latest /bin/sleep 1000 \
+&& docker run -d ${RUNOPT} ${TEMPLATE}:latest /bin/sleep 1000 \
 && KERNEL=$(docker exec ${TEMPLATE} readlink -f /vmlinuz) \
 && INITRD=$(docker exec ${TEMPLATE} readlink -f /initrd.img) \
+&& docker exec ${TEMPLATE} update-initramfs -c -k all \
 && docker cp ${TEMPLATE}:${KERNEL} ./vmlinuz \
 && chmod go+r ./vmlinuz \
 && docker cp ${TEMPLATE}:${INITRD} ./initrd.img \

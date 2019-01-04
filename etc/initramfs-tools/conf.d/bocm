@@ -9,6 +9,9 @@ export ROOTSTANDARD=/tmp/rootstandard
 # Parse command line options for global options
 for x in $(cat /proc/cmdline); do
         case $x in
+	ipxehttp*)
+		export IPXEHTTP="${x#ipxehttp=}"
+		;;
         make_volumes*)
                 export MAKE_VOLUMES='y'
                 ;;

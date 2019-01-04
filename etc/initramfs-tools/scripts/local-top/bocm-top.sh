@@ -17,8 +17,8 @@ esac
 . /scripts/functions
 . /scripts/custom_functions
 
-# Jezeli nie jest zdefiniowany szablon na MFS to nic nie rob
-if [ "x${MFSUPPER}" = "x" ]; then
+# Jezeli nie jest zdefiniowany szablon na MFS i nie jest to start z iPXE http to nic nie rob
+if [ "x${MFSUPPER}" = "x" ] && [ "x${IPXEHTTP}" = "x" ]; then
   exit 0
 fi
 
@@ -41,41 +41,48 @@ log_end_msg
 maybe_break after_net_config
 maybe_break before_mfsnet_config
 
-if [ "x${MFSMANUALNET}" = "x" ]; then
+if [ "x${MFSUPPER}" != "x" ]; then
+  if [ "x${MFSMANUALNET}" = "x" ]; then
 	log_begin_msg "Configuring mfs networking"
 	if [ -n $MFSINT ]; then 
           configure_mfs_network $MFSINT
 	fi
 	log_end_msg
-else
+	maybe_break after_mfsnet_config
+  else
 	log_begin_msg "Configuring lo interface"
         ip link set lo up
 	log_end_msg
+
 	panic "Please configure mfs networking manually"
-fi
+  fi
+  maybe_break before_mount_rootstandard
 
-maybe_break after_mfsnet_config
-maybe_break before_mount_rootstandard
+  log_begin_msg "Mounting template from mfs as rootstandard"
+  	mount_rootstandard
+  log_end_msg
 
-log_begin_msg "Mounting template from mfs as rootstandard"
-	mount_rootstandard
-log_end_msg
+  maybe_break after_mount_rootstandard
 
-maybe_break after_mount_rootstandard
-
-if [ ${readonly} = y ]; then
-	roflag="ro"
-else
+  if [ ${readonly} = y ]; then
+  	roflag="ro"
+  else
 	roflag="rw"
+  fi
+
+  mount -o remount,${roflag} "${ROOTSTANDARD}"
+
+  ln -s "${ROOTSTANDARD}"/bin/bash /bin/bash
+
+  if ( mount|grep ${ROOTSTANDARD} > /dev/null ); then
+  	bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ${ROOTSTANDARD}/${BOCMDIR}/functions.sh; bocm_top;"
+  fi
 fi
 
-mount -o remount,${roflag} "${ROOTSTANDARD}"
-
-ln -s "${ROOTSTANDARD}"/bin/bash /bin/bash
-
-if ( mount|grep ${ROOTSTANDARD} > /dev/null ); then
-
-  bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ${ROOTSTANDARD}/${BOCMDIR}/functions.sh; bocm_top;"
+if [ "x${IPXEHTTP}" != "x" ]; then
+  wget http://$IPXEHTTP/${BOCMDIR}/functions.sh
+  wget http://$IPXEHTTP/${BOCMDIR}/volumes
+  bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./functions.sh; bocm_top;"
 fi
 
 exit 0

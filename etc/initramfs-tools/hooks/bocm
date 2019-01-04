@@ -56,5 +56,6 @@ done
 
 copy_exec /bin/tar /bin
 copy_exec /usr/bin/wget /usr/bin
+copy_exec /bin/bash /bin/bash
 
 exit 0

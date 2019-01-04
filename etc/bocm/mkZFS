@@ -1,0 +1,24 @@
+#!/bin/sh
+
+#Tymczasowe
+          echo "********* Tworzenie ZFS-a ***********"
+          read -p "Nacisnij Enter by kontynuowac"
+          zpool create -f -o ashift=12 -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
+                -O xattr=sa -O mountpoint=/ -R /root rpool /dev/sda2
+	  zfs create -o canmount=off -o mountpoint=none rpool/ROOT
+          zfs create -o canmount=noauto -o mountpoint=/ rpool/ROOT/ubuntu
+          zfs mount rpool/ROOT/ubuntu
+          cd /root
+          mkdir boot
+          mkdir boot/efi
+          mount -t vfat /dev/sda1 boot/efi
+          wget -O - http://10.100.0.2/templates/template18.04/template18.04.tgz|tar zxf -
+          mount -o bind /dev dev
+          mount -o bind /proc proc
+          mount -o bind /sys sys
+          chroot ./ /bin/bash -c "update-grub; grub-install; exit"
+          sync
+          sync
+          umount boot/efi
+          read -p "Nacisnij Enter by kontynuowac"
+

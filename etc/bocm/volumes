@@ -7,6 +7,6 @@
 #
 # UWAGA: Wolumin o wielkosci 0 bedzie rozszerzany do 100 pojemnosci dysku, musi byc na koncu listy!
 
-lvswap:swap:0::RAID1
-lvroot:/:4g:xfs:RAID1
-lvchunk:/mnt/lvchunk:0:xfs:N
+lvswap:swap:1::RAID1
+lvroot:/:2g:xfs:RAID1
+lvc:/mnt/lvchunk:0:xfs:N

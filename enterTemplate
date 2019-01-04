@@ -7,13 +7,15 @@ if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
   exit
 fi
 
+# Jesli nie istnieje kontener
 if ! docker ps -a|grep -q ${TEMPLATE}; then 
-  docker run ${RUNOPT} ${TEMPLATE}:latest
+  docker run -it ${RUNOPT} ${TEMPLATE}:latest
 else
+  # Jesli istnieje i nie jest uruchomiony
   if docker ps -a|grep ${TEMPLATE}|grep -q "Exited"; then
     docker start -ai ${TEMPLATE}
   else
-    docker attach -i ${TEMPLATE}
+    docker attach ${TEMPLATE}
   fi
 fi
 

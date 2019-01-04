@@ -338,13 +338,18 @@ syncDir() {
 
 bocm_top(){
         [ "x$init" = "x" ] && (echo "Not initramfs!"; return)
-	# Jezeli nie ma synchronizacji nic nie rob
-        if [ "x${MFSUPPER}" = 'x' ]; then
-          exit
-        fi
+
+	if [ "x${IPXEHTTP}" != 'x' ]; then
+  	  VOLUMES_FILE=${VOLUME_FILE}
+	fi
 
 	# Zabezpieczenie na wypadek opoznionego pojawienia sie dysku w systemie, wystepuje czesto na rzeczywistym sprzecie
         while [ "x$(ls /dev/sda 2> /dev/null)" != "x/dev/sda" ]; do echo "Brak /dev/sda"; sleep 1; done
+
+	# Jezeli nie ma synchronizacji nic nie rob
+        if [ "x${MFSUPPER}" = 'x' ] && [ "x${IPXEHTTP}" = 'x' ]; then
+          exit
+        fi
 
 	if [ "x${MANUAL_DISK_MANAGE}" = 'xn' -o \
 	     "x${MANUAL_DISK_MANAGE}" = "xno" -o \
@@ -383,7 +388,7 @@ bocm_bottom()
 {
 	[ "x$init" = "x" ] && (echo "Not initramfs!"; return)
 	# Jezeli nie ma synchronizacji nic nie rob
-	if [ "x${MFSUPPER}" = 'x' ]; then
+	if [ "x${MFSUPPER}" = 'x' ] && [ "x${IPXEHTTP}" = 'x' ]; then
           exit
 	fi
 
@@ -391,12 +396,9 @@ bocm_bottom()
         # * root disk partitions
         # * root disk filesystems for rootdevice and swapdevice
 
-	local OVER_SIZE=1.3 # +30%
-	
-	log_begin_msg "Calculating template size"
-        	T_SIZE=$(echo "$(getSizeDirectory ${ROOTSTANDARD}) $OVER_SIZE" | awk '{ printf "%.2f", $1 * $2 }')
-		log_success_msg "${T_SIZE}g"
-        log_end_msg
+	if [ "x${IPXEHTTP}" != 'x' ]; then
+  	  VOLUMES_FILE=${VOLUME_FILE}
+	fi
 
 	while IFS=:, read LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID; do
                 if [[ "x$(printf "%c" "${LVM_NAME}")" != "x#" ]] && \
@@ -408,6 +410,14 @@ bocm_bottom()
       			fi
 		fi
   	done < $VOLUMES_FILE
+
+if [ "x${MFSUPPER}" != 'x' ]; then
+	local OVER_SIZE=1.3 # +30%
+	
+	log_begin_msg "Calculating template size"
+        	T_SIZE=$(echo "$(getSizeDirectory ${ROOTSTANDARD}) $OVER_SIZE" | awk '{ printf "%.2f", $1 * $2 }')
+		log_success_msg "${T_SIZE}g"
+        log_end_msg
 
 	ROOT_SIZE=$(lvm lvs -o lv_size --noheadings --nosuffix --units g -S vg_name="$VG_NAME",lv_name="$LV_ROOT")
 	if [ "$(echo "$T_SIZE" "$ROOT_SIZE" | awk '{ print ($2 > $1) ? "YES" : "NO" }' )" = "YES" ]; then
@@ -427,6 +437,7 @@ bocm_bottom()
         fi
 	mount -o noexec,uid=0,gid=4,dmask=0023,fmask=0133 ${DISKDEV}1 ${rootmnt}/boot
 
+
 	# syncing
 	RESULT=$(syncDir ${ROOTSTANDARD} ${rootmnt})
 
@@ -445,6 +456,29 @@ bocm_bottom()
 	log_begin_msg "Make network config file"
 	  make_network_config_file
 	log_end_msg
+fi
+
+if [ "x${IPXEHTTP}" != 'x' ]; then
+	# mount /boot/efi partition before syncing
+        mount -o remount,rw ${rootmnt} || panic "could not remount rw ${rootmnt}";
+        if ! [[ -d ${rootmnt}/boot ]]; then
+          mkdir ${rootmnt}/boot
+	  mkdir ${rootmnt}/boot/efi
+        fi
+        mount -o noexec,uid=0,gid=4,dmask=0023,fmask=0133 ${DISKDEV}1 ${rootmnt}/boot/efi
+
+        cd ${rootmnt}
+	wget -O - http://${IPXEHTTP}/template18.04.tgz|tar zxf -
+	wget -O - http://${IPXEHTTP}/${BOCMDIR}/fstab > etc/fstab
+	mount -o bind /dev ${rootmnt}/dev
+	mount -o bind /proc ${rootmnt}/proc
+	mount -o bind /sys ${rootmnt}/sys
+	chroot /root /bin/bash -c "update-grub; grub-install --efi-directory=/boot/efi; exit"
+	umount ${rootmnt}/sys
+	umount ${rootmnt}/proc
+	umount ${rootmnt}/dev
+	cd /
+fi
 
 	umount ${rootmnt}/boot
 	mount -o remount,ro ${rootmnt} || panic "could not remount ro ${rootmnt}";
