@@ -1,5 +1,11 @@
 #!/bin/bash
 
+TAG=$1
+
+if [ "x${TAG]" = 'x' ]; then
+  TAG=latest
+fi 
+
 source global
 
 read -p "Czy budowac obraz ${TEMPLATE}? (t/n): " ANS
@@ -7,8 +13,8 @@ if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
   exit
 fi
 
-docker build -t ${TEMPLATE}:latest ./ \
-&& docker run -d ${RUNOPT} ${TEMPLATE}:latest /bin/sleep 1000 \
+docker build -t ${TEMPLATE}:${TAG} ./ \
+&& docker run -d ${RUNOPT} ${TEMPLATE}:${TAG} /bin/sleep 1000 \
 && KERNEL=$(docker exec ${TEMPLATE} readlink -f /vmlinuz) \
 && INITRD=$(docker exec ${TEMPLATE} readlink -f /initrd.img) \
 && docker exec ${TEMPLATE} update-initramfs -c -k all \

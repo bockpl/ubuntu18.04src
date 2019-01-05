@@ -1,15 +1,21 @@
 #!/bin/bash
 
+TAG=$1
+
+if [ "x${TAG]" = 'x' ]; then
+  TAG=latest
+fi
+
 source global
 
-read -p "Czy wejsc do kontenera ${TEMPLATE}? (t/n):" ANS
+read -p "Czy wejsc do kontenera ${TEMPLATE}:${TAG}? (t/n):" ANS
 if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
   exit
 fi
 
 # Jesli nie istnieje kontener
 if ! docker ps -a|grep -q ${TEMPLATE}; then 
-  docker run -it ${RUNOPT} ${TEMPLATE}:latest
+  docker run -it ${RUNOPT} ${TEMPLATE}:${TAG}
 else
   # Jesli istnieje i nie jest uruchomiony
   if docker ps -a|grep ${TEMPLATE}|grep -q "Exited"; then
