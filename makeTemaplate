@@ -2,7 +2,7 @@
 
 TAG=$1
 
-if [ "x${TAG]" = 'x' ]; then
+if [ "x${TAG}" = 'x' ]; then
   TAG=latest
 fi 
 
