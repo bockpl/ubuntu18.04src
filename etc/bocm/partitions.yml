@@ -3,9 +3,13 @@
 partition:
   -
     number: 1
+    name: EFI
+    type: ef00
     size: 200M
   -
     number: 2
+    name: ZFS
+    type: 8300
     size: 0
 
 volume:

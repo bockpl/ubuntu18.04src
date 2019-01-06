@@ -133,18 +133,31 @@ cleanDisk() {
 # Tworzenie standardowego schematu podzialu dysku na partycje
 # Parametry:
 #   devDisk - sciezka urzadzenia blokowego dysku
+#   partFile - sciezka do pliku z opisem partycji
 # Wynieki:
 #   OK - jesli wszystko przebieglo pomyslnie
 #   Komunikat bledu - w przypadku wystapienia dowolnego bledu
 makeStdPartition() {
   local RESULT="OK"
   local devDisk=$1
-  
+  local partFile=$2
+
+  if [ "x${partFile}" != 'x' ] && [ -f ${partFile} ]; then
+    source ${BOCMDIR}/bash-yaml/script/yaml.sh
+
+    create_variables ${partFile}
+
+    for (( p=0; p<${#partition__number[@]}; p++ )); do
+      RESULT=$(_run "$SGDISK -n ${partition__number[$p]}::+${partition__size[$p]} $devDisk \
+	-t ${partition__number[$p]}:${partition__type[$p]} -c ${partition__number[$p]}:${partition__name[$p]}")
+    done
+  fi
+
   # Stworz partycje EFI
-  RESULT=$(_run "$SGDISK -n 1::+200M $devDisk -t 1:ef00  -c 1:EFI")
+  #RESULT=$(_run "$SGDISK -n 1::+200M $devDisk -t 1:ef00  -c 1:EFI")
 
   # Stworz partycje LVM
-  RESULT=$(_run "$SGDISK -n 2:: $devDisk -t 2:8e00 -c 2:LVM")
+  #RESULT=$(_run "$SGDISK -n 2:: $devDisk -t 2:8e00 -c 2:LVM")
 
   # Tworzenie systemu plikow fat32
   RESULT=$(_run "/sbin/mkfs.vfat -F 32 ${devDisk}1")
@@ -339,8 +352,9 @@ syncDir() {
 bocm_top(){
         [ "x$init" = "x" ] && (echo "Not initramfs!"; return)
 
-	if [ "x${IPXEHTTP}" != 'x' ]; then
-  	  VOLUMES_FILE=${VOLUME_FILE}
+	# Jezeli zmienna zdefiniowana
+	if [[ "x${IPXEHTTP}" != 'x' ]]; then
+  	  VOLUMES_FILE=${BOCMDIR}/${VOLUME_FILE}
 	fi
 
 	# Zabezpieczenie na wypadek opoznionego pojawienia sie dysku w systemie, wystepuje czesto na rzeczywistym sprzecie
@@ -351,20 +365,18 @@ bocm_top(){
           exit
         fi
 
-	if [ "x${MANUAL_DISK_MANAGE}" = 'xn' -o \
-	     "x${MANUAL_DISK_MANAGE}" = "xno" -o \
-             "x${MANUAL_DISK_MANAGE}" = 'xfalse' -o \
-	     "x${MANUAL_DISK_MANAGE}" = "x0" ]; then
+	# Jezeli nie jest zdefiniowane lub ma jedna z wartosci
+	if [[ "x${MANUAL_DISK_MANAGE}" == @(x|xn|xno|xfasle|x0) ]]; then
 
-		# Force reinitialization?
-		if [ "x${MAKE_VOLUMES}" = 'xy' ]; then
+		# Jezeli ma jedna z wartosci to Force reinitialization?
+		if [[ "x${MAKE_VOLUMES}" == @(xy|xY|xyes|xtrue|x1) ]]; then
 			log_begin_msg "Node reinitialization requested - erasing root disk (${DISKDEV}) make partitions and volumes"
 			RESULT=$(cleanDisk ${DISKDEV})
 			if [ "$RESULT" != "OK" ]; then
           		  echo -e "$RESULT"
           		  panic "Error in: cleanDisk ${DISKDEV}"
         		fi
-			RESULT=$(makeStdPartition ${DISKDEV})
+			RESULT=$(makeStdPartition ${DISKDEV} ${BOCMDIR}/partitions.yml)
 			if [ "$RESULT" != "OK" ]; then
                           echo -e "$RESULT"
                           panic "Error in: makeStdPartition ${DISKDEV}"
@@ -397,7 +409,7 @@ bocm_bottom()
         # * root disk filesystems for rootdevice and swapdevice
 
 	if [ "x${IPXEHTTP}" != 'x' ]; then
-  	  VOLUMES_FILE=${VOLUME_FILE}
+  	  VOLUMES_FILE=${BOCMDIR}/volumes
 	fi
 
 	while IFS=:, read LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID; do
@@ -468,8 +480,8 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
         mount -o noexec,uid=0,gid=4,dmask=0023,fmask=0133 ${DISKDEV}1 ${rootmnt}/boot/efi
 
         cd ${rootmnt}
-	wget -O - http://${IPXEHTTP}/template18.04.tgz|tar zxf -
-	wget -O - http://${IPXEHTTP}/${BOCMDIR}/fstab > etc/fstab
+	/usr/bin/wget -q --show-progress -O - http://${IPXEHTTP}/template18.04.tgz|tar zxf -
+	cp ${BOCMDIR}/fstab > etc/fstab
 	mount -o bind /dev ${rootmnt}/dev
 	mount -o bind /proc ${rootmnt}/proc
 	mount -o bind /sys ${rootmnt}/sys

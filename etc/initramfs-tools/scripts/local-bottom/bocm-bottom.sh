@@ -26,8 +26,8 @@ maybe_break before_user_bottom
 
 if [ -e ${ROOTSTANDARD}/${BOCMDIR}/functions.sh ]; then
 	/bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ${ROOTSTANDARD}/${BOCMDIR}/functions.sh; bocm_bottom;"
-elif [ -e ./functions.sh ]; then
-	/bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./functions.sh; bocm_bottom;"
+else
+	/bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./${BOCMDIR}/functions.sh; bocm_bottom;"
 fi
 
 # Nadpisanie funkcji ktore mogly byc wczesniej nadpisane przez functions.sh
