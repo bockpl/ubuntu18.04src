@@ -1,0 +1,43 @@
+# A comment
+
+partition:
+  -
+    number: 1
+    size: 200M
+  -
+    number: 2
+    size: 0
+
+volume:
+  -
+    part: 1
+    name: EFI
+    dev: ""
+    fstype: vfat
+    size: 0
+    mnt: /boot/efi
+    raid: n
+  -
+    part: 2
+    name: SWAP
+    dev: mapper/vgroot-lvswap
+    fstype: ""
+    size: 1G
+    mnt: ""
+    raid: raid1
+  -
+    part: 2
+    name: lvroot
+    dev: mapper/vgroot-lvroot
+    fstype: xfs
+    size: 2G
+    mnt: /
+    raid: raid1
+  - 
+    part: 2
+    name: CHUNK
+    dev: mapper/vgroot-lvch
+    fstype: xfs
+    size: 0
+    mnt: /mnt/lvchunk
+    raid: n
