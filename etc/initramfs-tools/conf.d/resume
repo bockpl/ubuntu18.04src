@@ -1,1 +1,2 @@
-RESUME=UUID=efb8845b-6fa8-41c4-a74f-81201bd496d0
+# Disable resume (this system has no swap)
+RESUME=none

@@ -52,9 +52,10 @@ if [ -s "${ROOTSTANDARD}/${BOCMDIR}/${HOSTNAME}" ]; then . "${ROOTSTANDARD}/${BO
 lvm() {
   # Jezeli initramfs
   if [ "x$init" != "x" ]; then
-    RESULT=$(/sbin/lvm $@ --config "global { use_lvmetad = 0 }")
+    sed -i -e 's/use_lvmetad = 1/use_lvmetad =0/g' /etc/lvm/lvm.conf
+    RESULT=$(/sbin/lvm "$@" --config "global { use_lvmetad = 0 }")
   else
-    RESULT=$(/sbin/lvm $@)
+    RESULT=$(/sbin/lvm "$@")
   fi
   echo -e "$RESULT"
 }
@@ -63,13 +64,13 @@ lvm() {
 _run() {
   local RESULT="OK"
 
-  RESULT=$(eval "$@ 2>&1")
+  RESULT=$(eval "$@" 2>&1)
   RET=$?
   if [ $RET != 0 ]; then
     if [ "x${MFSUPPER}" = 'x' ]; then
-      RESULT="$RESULT \n Exit status: $RET \n Error in command: $@"
+      RESULT="$RESULT \n Exit status: $RET \n Error in command: $*"
     else
-      panic "$RESULT \n Exit status: $RET \n Error in command: $@"
+      panic "$RESULT \n Exit status: $RET \n Error in command: $*"
     fi
   else
     RESULT="OK"
@@ -181,6 +182,8 @@ makeVolumes_new() {
   
   local doMakeFS=N
 
+  echo -ne "\n"
+
   SEC_SIZE=$(cat /sys/block/${DISK#/dev}/queue/physical_block_size)
 
   if [[ "x$VOLUMES" = "x" ]]; then
@@ -208,7 +211,7 @@ makeVolumes_new() {
 
   local LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID
 
-  while IFS=:, read LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID; do
+  grep -vE '(^#.*|^$)' $VOLUMES_FILE | while IFS=:, read LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID; do
     if [[ "x$(printf "%c" "${LVM_NAME}")" != "x#" ]] && \
        [[ "x$(printf "%c" "${LVM_NAME}")" != "x " ]] && \
        [[ "x$(printf "%c" "${LVM_NAME}")" != "x" ]]; then
@@ -291,7 +294,7 @@ makeVolumes_new() {
         fi
       fi
     fi;
-  done < $VOLUMES
+  done
 
   if [[ $RESULT = "OK" ]]; then
     return 0
@@ -370,12 +373,15 @@ bocm_top(){
 
 		# Jezeli ma jedna z wartosci to Force reinitialization?
 		if [[ "x${MAKE_VOLUMES}" == @(xy|xY|xyes|xtrue|x1) ]]; then
-			log_begin_msg "Node reinitialization requested - erasing root disk (${DISKDEV}) make partitions and volumes"
+			log_warning_msg "Node reinitialization requested"
+			log_begin_msg  "Erasing root disk (${DISKDEV})"
 			RESULT=$(cleanDisk ${DISKDEV})
 			if [ "$RESULT" != "OK" ]; then
           		  echo -e "$RESULT"
           		  panic "Error in: cleanDisk ${DISKDEV}"
         		fi
+			log_end_msg
+			log_begin_msg "Make partitions and volumes"
 			RESULT=$(makeStdPartition ${DISKDEV} ${BOCMDIR}/partitions.yml)
 			if [ "$RESULT" != "OK" ]; then
                           echo -e "$RESULT"
@@ -412,16 +418,11 @@ bocm_bottom()
   	  VOLUMES_FILE=${BOCMDIR}/volumes
 	fi
 
-	while IFS=:, read LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID; do
-                if [[ "x$(printf "%c" "${LVM_NAME}")" != "x#" ]] && \
-                   [[ "x$(printf "%c" "${LVM_NAME}")" != "x " ]] && \
-                   [[ "x$(printf "%c" "${LVM_NAME}")" != "x" ]]; then
-
-      			if [ "x${LVM_MOUNT}" = "x/" ]; then
-        			LV_ROOT=${LVM_NAME}
-      			fi
-		fi
-  	done < $VOLUMES_FILE
+	grep -vE '(^#.*|^$)' $VOLUMES_FILE| while IFS=:, read LVM_NAME LVM_MOUNT LVM_SIZE LVM_FS LVM_RAID; do
+      	  if [ "x${LVM_MOUNT}" = "x/" ]; then
+            LV_ROOT=${LVM_NAME}
+      	  fi
+  	done
 
 if [ "x${MFSUPPER}" != 'x' ]; then
 	local OVER_SIZE=1.3 # +30%
@@ -473,26 +474,36 @@ fi
 if [ "x${IPXEHTTP}" != 'x' ]; then
 	# mount /boot/efi partition before syncing
         mount -o remount,rw ${rootmnt} || panic "could not remount rw ${rootmnt}";
-        if ! [[ -d ${rootmnt}/boot ]]; then
-          mkdir ${rootmnt}/boot
-	  mkdir ${rootmnt}/boot/efi
+        if ! [[ -d ${rootmnt}/boot/efi ]]; then
+	  mkdir -p ${rootmnt}/boot/efi
         fi
         mount -o noexec,uid=0,gid=4,dmask=0023,fmask=0133 ${DISKDEV}1 ${rootmnt}/boot/efi
 
         cd ${rootmnt}
-	/usr/bin/wget -q --show-progress -O - http://${IPXEHTTP}/template18.04.tgz|tar zxf -
-	cp ${BOCMDIR}/fstab > etc/fstab
+	log_begin_msg "Downloading system image"
+	  echo -ne "\n"
+	  /usr/bin/wget -q --show-progress -O - http://${IPXEHTTP}/template18.04.tgz|tar zxf -
+	log_end_msg
+	cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
 	mount -o bind /dev ${rootmnt}/dev
 	mount -o bind /proc ${rootmnt}/proc
 	mount -o bind /sys ${rootmnt}/sys
-	chroot /root /bin/bash -c "update-grub; grub-install --efi-directory=/boot/efi; exit"
+	log_begin_msg "Installing bootloader"
+	  echo -ne "\n"
+	  chroot /root /bin/bash -c " \
+	    sed -i -e 's/use_lvmetad = 1/use_lvmetad = 0/g' /etc/lvm/lvm.conf; \
+	    update-grub; \
+	    grub-install --efi-directory=/boot/efi; \
+	    sed -i -e 's/use_lvmetad = 0/use_lvmetad = 1/g' /etc/lvm/lvm.conf; \
+	    exit"
+	log_end_msg
 	umount ${rootmnt}/sys
 	umount ${rootmnt}/proc
 	umount ${rootmnt}/dev
 	cd /
 fi
 
-	umount ${rootmnt}/boot
+	umount ${rootmnt}/boot/efi
 	mount -o remount,ro ${rootmnt} || panic "could not remount ro ${rootmnt}";
 }
 

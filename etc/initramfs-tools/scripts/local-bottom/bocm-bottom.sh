@@ -30,6 +30,8 @@ else
 	/bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./${BOCMDIR}/functions.sh; bocm_bottom;"
 fi
 
+maybe_break after_user_bottom
+
 # Nadpisanie funkcji ktore mogly byc wczesniej nadpisane przez functions.sh
 . /scripts/custom_functions
 

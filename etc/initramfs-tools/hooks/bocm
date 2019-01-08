@@ -54,8 +54,11 @@ do
         fi
 done
 
+# lvm.conf w celu pozbycia sie bledu metad
+copy_exec /etc/initramfs-tools/etc/lvm/lvm.conf /etc/lvm/lvm.conf
+
 copy_exec /bin/tar /bin
-copy_exec /usr/bin/wget /usr/bin
+copy_exec /usr/bin/wget /usr/bin/wget
 copy_exec /bin/bash /bin/bash
 
 exit 0
