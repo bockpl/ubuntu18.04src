@@ -1,1 +1,1 @@
-# template18.04
+# Template Ubuntu 18.04
