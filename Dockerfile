@@ -13,11 +13,11 @@ RUN sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT=\".*\"/GRUB_CMDLINE_LINUX_DEFAULT=""
 # Dodanie obslugi zfs-a
 #RUN apt-get install -y zfs-initramfs
 
-# Dodanie lvm-a
-RUN apt-get install -y lvm2
+# Dodanie lvm-a i xfs-a
+RUN apt-get install -y lvm2 xfsprogs
 
 # Dodanie standardowych pakietow
-RUN apt-get install -y vim gdisk xfsprogs curl
+RUN apt-get install -y openssh-server vim gdisk
 
 # Czyszczenie APT-a
 RUN apt-get -y autoremove

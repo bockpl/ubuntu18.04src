@@ -2,28 +2,27 @@
 
 TAG=$1
 
-if [ "x${TAG}" = 'x' ]; then
-  TAG=latest
-fi
+if [ "x${TAG}" = 'x' ]; then TAG=latest; fi
 
+# Musi byc wczytane po ustawieniu TAG
 source global
 
-read -p "Czy wejsc do kontenera ${TEMPLATE}:${TAG}? (t/n):" ANS
+read -p "Czy wejsc do kontenera ${TEMPLATE}_${TAG}? (t/n):" ANS
 if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
   exit
 fi
 
 # Jesli nie istnieje kontener
-if ! docker ps -a|grep -q ${TEMPLATE}; then 
+if ! docker ps -a|grep -q ${TEMPLATE}_TAG; then 
   docker run -it ${RUNOPT} ${TEMPLATE}:${TAG}
 else
   # Jesli istnieje i nie jest uruchomiony
-  if docker ps -a|grep ${TEMPLATE}|grep -q "Exited"; then
-    docker start -ai ${TEMPLATE}
+  if docker ps -a|grep ${TEMPLATE}_${TAG}|grep -q "Exited"; then
+    docker start -ai ${TEMPLATE}_${TAG}
   else
-    docker attach ${TEMPLATE}
+    docker attach ${TEMPLATE}_${TAG}
   fi
 fi
 
-docker stop ${TEMPLATE}
-docker rm ${TEMPLATE}
+docker stop ${TEMPLATE}_${TAG}
+docker rm ${TEMPLATE}_${TAG}

@@ -1,2 +1,3 @@
-TEMPLATE=$(basename $(pwd))
-RUNOPT="--name ${TEMPLATE} -v $(pwd)/etc/bocm:/etc/bocm -v $(pwd)/etc/initramfs-tools:/etc/initramfs-tools"
+TEMPLATE=$(basename $(dirname $(pwd)))
+
+RUNOPT="--name ${TEMPLATE}_${TAG} -v $(pwd)/etc/bocm:/etc/bocm -v $(pwd)/etc/initramfs-tools:/etc/initramfs-tools"

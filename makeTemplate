@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ "x$1" != 'x' ]; then TAG=$1; fi
+
+if [ "x${TAG}" = 'x' ]; then TAG=latest; fi
+
+# Musi byc wczytane po ustawieniu TAG
+source global
+
+read -p "Czy budowac obraz ${TEMPLATE}_${TAG}? (t/n): " ANS
+if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
+  exit
+fi
+
+touch ../${TAG} \
+&& docker build -t ${TEMPLATE}:${TAG} ./ \
+&& docker run -d ${RUNOPT} ${TEMPLATE}:${TAG} /bin/sleep 1000 \
+&& KERNEL=$(docker exec ${TEMPLATE}_${TAG} readlink -f /vmlinuz) \
+&& INITRD=$(docker exec ${TEMPLATE}_${TAG} readlink -f /initrd.img) \
+&& echo "Aktualizuje initramfs... "; docker exec ${TEMPLATE}_${TAG} update-initramfs -c -k all > /dev/null \
+&& docker cp ${TEMPLATE}_${TAG}:${KERNEL} ../vmlinuz \
+&& chmod go+r ../vmlinuz \
+&& docker cp ${TEMPLATE}_${TAG}:${INITRD} ../initrd.img \
+&& docker stop ${TEMPLATE}_${TAG} \
+&& echo "Eksportuje kontener do archiwum tgz..."; docker export ${TEMPLATE}_${TAG}|gzip > ../${TEMPLATE}.tgz \
+&& echo "Kasuje kontener..."; docker rm ${TEMPLATE}_${TAG}
