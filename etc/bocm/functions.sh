@@ -358,6 +358,10 @@ bocm_top(){
 	# Jezeli zmienna zdefiniowana
 	if [[ "x${IPXEHTTP}" != 'x' ]]; then
   	  VOLUMES_FILE=${BOCMDIR}/${VOLUME_FILE}
+	
+	  # Konfiguracja ssh
+	  mkdir -p /etc/ssh
+	  echo "StrictHostKeyChecking=no" > /etc/ssh/ssh_config
 	fi
 
 	# Zabezpieczenie na wypadek opoznionego pojawienia sie dysku w systemie, wystepuje czesto na rzeczywistym sprzecie
@@ -482,7 +486,18 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
         cd ${rootmnt}
 	log_begin_msg "Downloading system image"
 	  echo -ne "\n"
-	  /usr/bin/wget -q --show-progress -O - http://${IPXEHTTP}/template18.04.tgz|tar zxf -
+	  local SERVER=${IPXEHTTP%%\/*}
+	  local TEMPLATE=${IPXEHTTP##*\/}
+	  #local IMAGE="/srv/${IPXEHTTP#*\/}/${TEMPLATE}.tgz"
+	  local IMAGE="http://${IPXEHTTP}/${TEMPLATE}.tgz"
+	  /usr/bin/wget -q --show-progress -O - ${IMAGE}|tar zxf - || panic "System image ${IMAGE} download error!"
+	  #/usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${SERVER} "dd if=${IMAGE}"|tar zxf - || panic "System image ${IMAGE} download error!"
+	log_end_msg
+	log_begin_msg "Download configuration"
+	  echo -ne "\n"
+	  local CONFIMAGE=${IPXEHTTP#*\/}
+	  local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)/"
+	  /usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
 	log_end_msg
 	cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
 	mount -o bind /dev ${rootmnt}/dev

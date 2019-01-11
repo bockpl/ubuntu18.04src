@@ -80,9 +80,9 @@ if [ "x${MFSUPPER}" != "x" ]; then
 fi
 
 if [ "x${IPXEHTTP}" != "x" ]; then
-  log_begin_msg "Downloading BOCM"
-  	/usr/bin/wget -q -r -np -nH --cut-dirs=2 -R index.html http://$IPXEHTTP/${BOCMDIR}/
-  log_end_msg
+#  log_begin_msg "Downloading BOCM"
+#  	/usr/bin/wget -q -r -np -nH --cut-dirs=2 -R index.html http://$IPXEHTTP/${BOCMDIR}/
+#  log_end_msg
   bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./${BOCMDIR}/functions.sh; bocm_top;"
 fi
 
