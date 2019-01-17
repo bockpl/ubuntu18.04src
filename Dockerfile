@@ -1,6 +1,9 @@
 FROM ubuntu
 LABEL maintainer="seweryn.sitarski@p.lodz.pl"
 
+RUN apt-get update \
+    && apt-get -y upgrade
+
 RUN echo y | unminimize -y \
     && apt-get install -y linux-image-generic \
     && apt-get install -y grub-efi
@@ -17,7 +20,7 @@ RUN sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT=\".*\"/GRUB_CMDLINE_LINUX_DEFAULT=""
 RUN apt-get install -y lvm2 xfsprogs
 
 # Dodanie standardowych pakietow
-RUN apt-get install -y openssh-server vim gdisk
+RUN apt-get install -y openssh-server vim gdisk ifenslave vlan
 
 # Czyszczenie APT-a
 RUN apt-get -y autoremove
