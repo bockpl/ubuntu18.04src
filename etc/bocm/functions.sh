@@ -353,6 +353,7 @@ syncDir() {
 }
 
 change_kernelparams(){
+  local FILE=$1
   local PARAMS
 
   for P in $(cat /proc/cmdline); do
@@ -362,7 +363,7 @@ change_kernelparams(){
     fi; 
   done;
   # FIXIT: Specyficzne dla ubuntu do poprawy
-  sed -i -e "s/GRUB_CMDLINE_LINUX=.*/${PARAMS}/g" /etc/default/grub
+  sed -i -e "s/GRUB_CMDLINE_LINUX=.*/${PARAMS}/g" ${FILE}
 }
 
 bocm_top(){
@@ -518,9 +519,9 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
 	mount -o bind /sys ${rootmnt}/sys
 	log_begin_msg "Installing bootloader"
 	  echo -ne "\n"
+    change_kernelparams ${rootmnt}/etc/default/grub
 	  chroot /root /bin/bash -c " \
 	    sed -i -e 's/use_lvmetad = 1/use_lvmetad = 0/g' /etc/lvm/lvm.conf; \
-      . /etc/bocm/functions.sh; change_kernelparams; \
 	    update-grub; \
 	    grub-install --efi-directory=/boot/efi; \
 	    sed -i -e 's/use_lvmetad = 0/use_lvmetad = 1/g' /etc/lvm/lvm.conf; \
