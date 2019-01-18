@@ -49,5 +49,7 @@ fi
 ip addr flush eth0
 ip link set eth0 down
 
+maybe_break end
+
 exit 0
 
