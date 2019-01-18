@@ -352,6 +352,19 @@ syncDir() {
   echo -e "$RESULT"
 }
 
+change_kernelparams(){
+  local PARAMS
+
+  for P in $(cat /proc/cmdline); do
+    if [[ ${P} != BOOT_IMAGE* ]]; then 
+      if [[ ${P} = '--' ]]; then break; fi; 
+      PARAMS=${PARAMS}' '${P}; 
+    fi; 
+  done;
+  # FIXIT: Specyficzne dla ubuntu do poprawy
+  sed -i -e "s/GRUB_CMDLINE_LINUX=.*/${PARAMS}/g" /etc/default/grub
+}
+
 bocm_top(){
         [ "x$init" = "x" ] && (echo "Not initramfs!"; return)
 
@@ -507,6 +520,7 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
 	  echo -ne "\n"
 	  chroot /root /bin/bash -c " \
 	    sed -i -e 's/use_lvmetad = 1/use_lvmetad = 0/g' /etc/lvm/lvm.conf; \
+      . /etc/bocm/functions.sh; change_kernelparams; \
 	    update-grub; \
 	    grub-install --efi-directory=/boot/efi; \
 	    sed -i -e 's/use_lvmetad = 0/use_lvmetad = 1/g' /etc/lvm/lvm.conf; \
