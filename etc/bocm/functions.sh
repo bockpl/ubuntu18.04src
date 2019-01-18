@@ -356,7 +356,7 @@ change_kernelparams(){
   local PARAMS
 
   for P in $(cat /proc/cmdline); do
-    if [[ ${P} != BOOT_IMAGE* ]]; then 
+    if [[ ${P} != BOOT_IMAGE* || ${P} != vmlinuz ]]; then 
       if [[ ${P} = '--' ]]; then break; fi; 
       PARAMS=${PARAMS}' '${P}; 
     fi; 
