@@ -354,16 +354,16 @@ syncDir() {
 
 change_kernelparams(){
   local FILE=$1
-  local PARAMS
+  local PARAMS=""
 
   for P in $(cat /proc/cmdline); do
-    if [[ ${P} != BOOT_IMAGE* || ${P} != vmlinuz ]]; then 
+    if [[ ${P} != BOOT_IMAGE* && ${P} != vmlinuz ]]; then 
       if [[ ${P} = '--' ]]; then break; fi; 
       PARAMS=${PARAMS}' '${P}; 
     fi; 
   done;
   # FIXIT: Specyficzne dla ubuntu do poprawy
-  sed -i -e "s/GRUB_CMDLINE_LINUX=.*/${PARAMS}/g" ${FILE}
+  sed -i -e "s/GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX=\"${PARAMS}\"/g" ${FILE}
 }
 
 bocm_top(){
