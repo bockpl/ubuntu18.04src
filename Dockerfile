@@ -1,12 +1,19 @@
 FROM ubuntu
 LABEL maintainer="seweryn.sitarski@p.lodz.pl"
 
-RUN apt-get update \
-    && apt-get -y upgrade
+# W celu eliminacji bledu "debconf: unable to initialize frontend: Dialog"
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get -y update \
+    && apt-get -y upgrade \
+    && apt-get -y autoremove \
+    && apt-get clean
 
 RUN echo y | unminimize -y \
     && apt-get install -y linux-image-generic \
-    && apt-get install -y grub-efi
+    && apt-get install -y grub-efi \
+    && apt-get -y autoremove \
+    && apt-get clean
 
 RUN sed -i -e 's/root:\*/root:$6$MpxiqUwV$grZXHjiqaj2YmDgoJprGSij3v62DdE5tWMrRAmzDX7Pifrt2G8IwDz91Pq7k2wsEVE1hheyVNz.K9U2ZR0POT0/g' /etc/shadow
 
@@ -24,7 +31,9 @@ RUN systemctl disable systemd-networkd \
     && systemctl mask systemd-networkd
 
 # Dodanie standardowych pakietow
-RUN apt-get install -y openssh-server vim gdisk ifenslave vlan
+RUN apt-get install -y openssh-server vim gdisk ifenslave vlan \
+    && apt-get -y autoremove \
+    && apt-get clean
 
 # Dodanie kluczy dla użytkownika root
 RUN mkdir /root/.ssh
@@ -36,7 +45,7 @@ RUN echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDR4Us6wC4qtVZtGgTygjqe8lt8URLgd/
 
 RUN chmod 600 /root/.ssh/authorized_keys
 
+RUN apt-get install -y docker.io \
+    && apt-get -y autoremove \
+    && apt-get clean
 
-# Czyszczenie APT-a
-RUN apt-get -y autoremove
-RUN apt-get clean
