@@ -48,6 +48,5 @@ parse_yaml() {
 
 create_variables() {
     local yaml_file="$1"
-    local prefix="$2"
-    eval "$(parse_yaml "$yaml_file" "$prefix")"
+    eval "$(parse_yaml "$yaml_file")"
 }
