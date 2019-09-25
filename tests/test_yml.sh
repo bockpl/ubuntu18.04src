@@ -3,12 +3,20 @@
 # shellcheck disable=SC1091
 
 # Configure
-set -e
-cd "$(dirname "${BASH_SOURCE[0]}")"
-source ./bash-yaml/script/yaml.sh
+BASEDIR=../etc/bocm
 
-parse_yaml ./partitions.yml
-create_variables ./partitions.yml
+onExit() {
+  popd
+}
+trap onExit SIGQUIT
+pushd $(pwd)
+cd $(dirname $0)
+
+set -e
+source ${BASEDIR}/bash-yaml/script/yaml.sh
+
+parse_yaml ${BASEDIR}/partitions.yml
+create_variables ${BASEDIR}/partitions.yml
 
 #echo il_part=${#part__number[@]}
 #echo il_vol=${#vol__part[@]}
@@ -35,4 +43,3 @@ done
 #  echo ${partition__number[${vol}]} ${partition__name[${vol}]} ${partition__volname[${vol}]} ${partition__mntpoint[${vol}]} \
 #${partition__size[${vol}]} ${partition__fstype[${vol}]} ${partition__raid[${vol}]}
 #done
-
