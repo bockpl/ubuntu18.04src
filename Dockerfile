@@ -26,10 +26,6 @@ RUN sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT=\".*\"/GRUB_CMDLINE_LINUX_DEFAULT=""
 # Dodanie lvm-a i xfs-a
 RUN apt-get install -y lvm2 xfsprogs
 
-# Wylaczenie networkd do czasu przejscia na konfiguracje sieci przez netplan
-RUN systemctl disable systemd-networkd \
-    && systemctl mask systemd-networkd
-
 # Dodanie standardowych pakietow
 RUN apt-get install -y openssh-server vim gdisk ifenslave vlan \
     && apt-get -y autoremove \
