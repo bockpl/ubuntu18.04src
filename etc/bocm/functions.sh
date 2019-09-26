@@ -507,10 +507,11 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
 	  /usr/bin/wget -q --show-progress -O - ${IMAGE}|tar zxf - || panic "System image ${IMAGE} download error!"
 	  #/usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${SERVER} "dd if=${IMAGE}"|tar zxf - || panic "System image ${IMAGE} download error!"
 	log_end_msg
-	log_begin_msg "Download configuration"
+
+	local CONFIMAGE=${IPXEHTTP#*\/}
+        local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)/"
+	log_begin_msg "Download configuration from ${CONFIMAGE}"
 	  echo -ne "\n"
-	  local CONFIMAGE=${IPXEHTTP#*\/}
-	  local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)/"
 	  /usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
 	log_end_msg
 	cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
