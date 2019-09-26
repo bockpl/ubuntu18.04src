@@ -512,7 +512,7 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
         local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)/"
 	log_begin_msg "Download configuration from ${CONFIMAGE}"
 	  echo -ne "\n"
-	  /usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
+	  /usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe --exclude=.git -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
 	log_end_msg
 	cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
 	mount -o bind /dev ${rootmnt}/dev
