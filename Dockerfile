@@ -27,7 +27,7 @@ RUN sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT=\".*\"/GRUB_CMDLINE_LINUX_DEFAULT=""
 RUN apt-get install -y lvm2 xfsprogs
 
 # Dodanie standardowych pakietow
-RUN apt-get install -y openssh-server vim gdisk ifenslave vlan \
+RUN apt-get install -y openssh-server vim gdisk ifenslave vlan coreutils \
     && apt-get -y autoremove \
     && apt-get clean
 
