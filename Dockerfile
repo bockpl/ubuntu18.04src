@@ -57,5 +57,4 @@ RUN apt-get install -y gnupg2 ca-certificates wget \
 
 RUN mkdir /srv/TEMPLATES
 RUN echo "mfsmount        /srv/TEMPLATES   fuse    rw,nodev,nosuid,_netdev,mfsmaster=mfsmaster.dev.p.lodz.pl,mfsport=9421,mfssubfolder=/obrazy/KOPL    0       0" >> /etc/fstab
-#
 
