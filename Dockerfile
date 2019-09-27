@@ -46,3 +46,16 @@ RUN apt-get install -y docker.io \
     && apt-get -y autoremove \
     && apt-get clean
 
+# Dodanie obsługi MFS i dostęp do obrazów
+RUN apt-get install -y gnupg2 ca-certificates wget
+RUN echo "deb http://ppa.moosefs.com/3.0.100/apt/ubuntu/xenial xenial main" > /etc/apt/sources.list.d/moosefs.list
+RUN wget -O - http://ppa.moosefs.com/moosefs.key | apt-key add -
+RUN apt-get update \ 
+    && apt install -y moosefs-pro-client \
+    && apt-get -y autoremove \
+    && apt-get clean
+
+RUN mkdir /srv/TEMPLATES
+RUN echo "mfsmount        /srv/TEMPLATES   fuse    rw,nodev,nosuid,_netdev,mfsmaster=mfsmaster.dev.p.lodz.pl,mfsport=9421,mfssubfolder=/obrazy/KOPL    0       0" >> /etc/fstab
+#
+
