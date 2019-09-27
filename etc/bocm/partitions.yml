@@ -34,7 +34,7 @@ volume:
     name: lvroot
     dev: mapper/vgroot-lvroot
     fstype: xfs
-    size: 2G
+    size: 4G
     mnt: /
     raid: raid1
   - 
