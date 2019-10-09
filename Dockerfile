@@ -36,9 +36,10 @@ RUN set -xe \
     && rm -rf /var/lib/apt/lists/*
 
 # Dodanie standardowych pakietów
+# policykit-1 - obsługa nadawania hostname z dhcp
 RUN set -xe \
     && apt-get update \
-    && apt-get install -y --no-install-recommends openssh-server vim gdisk ifenslave vlan coreutils \
+    && apt-get install -y --no-install-recommends openssh-server vim gdisk ifenslave vlan coreutils policykit-1 \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -73,3 +74,15 @@ RUN set -xe \
 RUN VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r) \
     && sudo curl -L "https://github.com/docker/compose/releases/download/$(echo $VERSION)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \ 
     && chmod +x /usr/local/bin/docker-compose
+
+# MFS
+RUN set -xe \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends gnupg2 ca-certificates wget \
+    && echo "deb http://ppa.moosefs.com/3.0.101/apt/ubuntu/bionic bionic main" > /etc/apt/sources.list.d/moosefs.list \
+    && wget -O - http://ppa.moosefs.com/moosefs.key | apt-key add - \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends moosefs-pro-client \
+    && apt-get -y autoremove \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
