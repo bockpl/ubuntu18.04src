@@ -86,3 +86,7 @@ RUN set -xe \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Grub timeout workaround ustawione na 3s
+RUN set -xe \
+    && echo "GRUB_RECORDFAIL_TIMEOUT=3" >> /etc/default/grub
