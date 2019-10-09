@@ -17,7 +17,7 @@ RUN yes | unminimize
 
 RUN set -xe \
     && apt-get update \
-    && apt-get install -y --no-install-recommends linux-image-generic grub-efi \
+    && apt-get install -y --no-install-recommends apt-utils linux-image-generic grub-efi \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
