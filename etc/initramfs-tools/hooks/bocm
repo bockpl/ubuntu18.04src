@@ -70,4 +70,7 @@ copy_file BOCM_fstab /etc/bocm/fstab
 copy_file BOCM_partitions.yml /etc/bocm/partitions.yml
 copy_file BOCM_bash_yaml /etc/bocm/bash-yaml/script/yaml.sh
 
+# Na potrzeby klienta ssh
+copy_file SSH_PASSWD /etc/passwd /etc/passwd
+
 exit 0
