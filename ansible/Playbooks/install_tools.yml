@@ -1,0 +1,13 @@
+---
+
+- name : "Instalacja podstawowych narzedzi"
+  hosts: "{{ var_host }}"
+  tasks:
+    - name: Narzedzia podsatowe
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - sysstat
+        - htop
+        - glances

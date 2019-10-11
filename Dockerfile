@@ -90,3 +90,19 @@ RUN set -xe \
 # Grub timeout workaround ustawione na 3s
 RUN set -xe \
     && echo "GRUB_RECORDFAIL_TIMEOUT=3" >> /etc/default/grub
+
+# Playbooki
+
+ADD ansible /ansible
+
+RUN set -xe \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ansible \
+    && ansible-playbook /ansible/Playbooks/install_tools.yml --connection=local --extra-vars "var_host=127.0.0.1" \
+    && apt-get purge -y ansible \
+    && apt-get -y autoremove \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /ansible
+
+
