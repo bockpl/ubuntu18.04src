@@ -19,7 +19,7 @@
         - iperf
         - dstat
         - tshark
-        - bonie++
+        - bonnie++
         - telnet
         - traceroute
         - nmap
