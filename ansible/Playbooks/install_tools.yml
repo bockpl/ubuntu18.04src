@@ -11,3 +11,21 @@
         - sysstat
         - htop
         - glances
+        - dnsutils
+        - tcpdump
+        - net-tools
+        - htop
+        - whois
+        - iperf
+        - dstat
+        - tshark
+        - bonie++
+        - telnet
+        - traceroute
+        - nmap
+        - iotop
+        - dstat
+        - mtr
+        - bwm-ng
+        - strace
+        - mc
