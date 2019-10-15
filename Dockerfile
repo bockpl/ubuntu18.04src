@@ -105,4 +105,5 @@ RUN set -xe \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /ansible
 
-
+# Dodanie wersji
+ADD VERSION /VERSION
