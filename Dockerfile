@@ -1,5 +1,6 @@
 From ubuntu:18.04
-LABEL maintainer="konrad.stefanski@p.lodz.pl"
+#Maintainer is deprecated 
+LABEL authors="konrad.stefanski@p.lodz.pl,seweryn.sitarski@p.lodz.pl"
 
 # W celu eliminacji bledu "debconf: unable to initialize frontend: Dialog"
 ENV DEBIAN_FRONTEND noninteractive
