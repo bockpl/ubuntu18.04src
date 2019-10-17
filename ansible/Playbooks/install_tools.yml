@@ -29,3 +29,5 @@
         - bwm-ng
         - strace
         - mc
+        - net-tools
+        - git-core
