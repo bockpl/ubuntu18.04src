@@ -15,6 +15,7 @@ fi
 touch ../${TAG} \
 && docker build -t ${TEMPLATE}:${TAG} ./ \
 && docker run -d ${RUNOPT} ${TEMPLATE}:${TAG} /bin/sleep 1000 \
+&& docker exec ${TEMPLATE}_${TAG} chmod 600 /etc/bocm/boipxe_rsa \
 && KERNEL=$(docker exec ${TEMPLATE}_${TAG} readlink -f /vmlinuz) \
 && INITRD=$(docker exec ${TEMPLATE}_${TAG} readlink -f /initrd.img) \
 && echo "Aktualizuje initramfs... "; docker exec ${TEMPLATE}_${TAG} update-initramfs -c -k all > /dev/null \

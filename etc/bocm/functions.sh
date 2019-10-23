@@ -371,11 +371,24 @@ bocm_top(){
 
 	# Jezeli zmienna zdefiniowana
 	if [[ "x${IPXEHTTP}" != 'x' ]]; then
-  	  VOLUMES_FILE=${BOCMDIR}/${VOLUME_FILE}
+          local CONFIMAGE=${IPXEHTTP#*\/}
+          local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)"
+          local CONFIMAGE="${CONFIMAGE}/initrd.conf/"
+
+  	VOLUMES_FILE=${BOCMDIR}/${VOLUME_FILE}
 	
 	  # Konfiguracja ssh
 	  mkdir -p /etc/ssh
-	  echo "StrictHostKeyChecking=no" > /etc/ssh/ssh_config
+	  echo "StrictHostKeyChecking=no" >> /etc/ssh/ssh_config
+
+          local SSHC="/usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*}"
+          local CONFEXIST=$(${SSHC} "if [ -d ${CONFIMAGE} ]; then echo Exist; else echo NotExist; fi")
+          if [[ "${CONFEXIST}" != 'NotExist' ]]; then
+            log_begin_msg "Download configuration initrd from ${CONFIMAGE}"
+              echo -ne "\n"
+              ${SSHC} "tar -zcf - -C ${CONFIMAGE} ."|tar zxf - -C / || panic "Configuration ${CONFIMAGE} download error!"
+            log_end_msg
+          fi
 	fi
 
 	# Zabezpieczenie na wypadek opoznionego pojawienia sie dysku w systemie, wystepuje czesto na rzeczywistym sprzecie
@@ -512,7 +525,7 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
         local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)/"
 	log_begin_msg "Download configuration from ${CONFIMAGE}"
 	  echo -ne "\n"
-	  /usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe --exclude=.git -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
+	  /usr/bin/ssh -o BatchMode=yes -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe --exclude=.git --exclude=initrd.conf -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
 	log_end_msg
 	cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
 	mount -o bind /dev ${rootmnt}/dev
