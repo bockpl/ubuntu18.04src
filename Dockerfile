@@ -108,3 +108,7 @@ RUN set -xe \
 
 # Dodanie wersji
 ADD VERSION /VERSION
+
+#FSTAB
+ADD etc/fstab /etc/fstab
+
