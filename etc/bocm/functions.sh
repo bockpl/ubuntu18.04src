@@ -533,6 +533,14 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
 	mount -o bind /sys ${rootmnt}/sys
 	log_begin_msg "Installing bootloader"
 	  echo -ne "\n"
+	  # Zabezpieczenie istniejącego fstab przed nadpisaniem
+	  if [ -f ${rootmnt}/etc/fstab ]; then
+	    mv ${rootmnt}/etc/fstab ${rootmnt}/etc/fstab.org
+	  fi
+	  cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
+          mount -o bind /dev ${rootmnt}/dev
+          mount -o bind /proc ${rootmnt}/proc
+          mount -o bind /sys ${rootmnt}/sys
     change_kernelparams ${rootmnt}/etc/default/grub
 	  chroot /root /bin/bash -c " \
 	    sed -i -e 's/use_lvmetad = 1/use_lvmetad = 0/g' /etc/lvm/lvm.conf; \
@@ -540,6 +548,9 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
 	    grub-install --efi-directory=/boot/efi; \
 	    sed -i -e 's/use_lvmetad = 0/use_lvmetad = 1/g' /etc/lvm/lvm.conf; \
 	    exit"
+	  if [ -f ${rootmnt}/etc/fstab.org ]; then
+            mv ${rootmnt}/etc/fstab.org ${rootmnt}/etc/fstab
+	  fi
 	log_end_msg
 	umount ${rootmnt}/sys
 	umount ${rootmnt}/proc
