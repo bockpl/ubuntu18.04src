@@ -371,11 +371,24 @@ bocm_top(){
 
 	# Jezeli zmienna zdefiniowana
 	if [[ "x${IPXEHTTP}" != 'x' ]]; then
-  	  VOLUMES_FILE=${BOCMDIR}/${VOLUME_FILE}
+          local CONFIMAGE=${IPXEHTTP#*\/}
+          local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)"
+          local CONFIMAGE="${CONFIMAGE}/initrd.conf/"
+
+  	VOLUMES_FILE=${BOCMDIR}/${VOLUME_FILE}
 	
 	  # Konfiguracja ssh
 	  mkdir -p /etc/ssh
-	  echo "StrictHostKeyChecking=no" > /etc/ssh/ssh_config
+	  echo "StrictHostKeyChecking=no" >> /etc/ssh/ssh_config
+
+          local SSHC="/usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*}"
+          local CONFEXIST=$(${SSHC} "if [ -d ${CONFIMAGE} ]; then echo Exist; else echo NotExist; fi")
+          if [[ "${CONFEXIST}" != 'NotExist' ]]; then
+            log_begin_msg "Download configuration initrd from ${CONFIMAGE}"
+              echo -ne "\n"
+              ${SSHC} "tar -zcf - -C ${CONFIMAGE} ."|tar zxf - -C / || panic "Configuration ${CONFIMAGE} download error!"
+            log_end_msg
+          fi
 	fi
 
 	# Zabezpieczenie na wypadek opoznionego pojawienia sie dysku w systemie, wystepuje czesto na rzeczywistym sprzecie
@@ -512,14 +525,18 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
         local CONFIMAGE="/srv/${CONFIMAGE%\/*}/CONFIGS/$(hostname)/"
 	log_begin_msg "Download configuration from ${CONFIMAGE}"
 	  echo -ne "\n"
-	  /usr/bin/ssh -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe --exclude=.git -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
+	  /usr/bin/ssh -o BatchMode=yes -i ${BOCMDIR}/boipxe_rsa root@${IPXEHTTP%%\/*} "tar -zcf - --exclude=boot.ipxe --exclude=.git --exclude=initrd.conf -C ${CONFIMAGE}/ ."|tar zxf - -C ${rootmnt} || panic "Configuration ${CONFIMAGE} download erro!"
 	log_end_msg
-	cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
-	mount -o bind /dev ${rootmnt}/dev
-	mount -o bind /proc ${rootmnt}/proc
-	mount -o bind /sys ${rootmnt}/sys
 	log_begin_msg "Installing bootloader"
 	  echo -ne "\n"
+	  # Zabezpieczenie istniejącego fstab przed nadpisaniem
+	  if [ -f ${rootmnt}/etc/fstab ]; then
+	    mv ${rootmnt}/etc/fstab ${rootmnt}/etc/fstab.org
+	  fi
+	  cp ${BOCMDIR}/fstab ${rootmnt}/etc/fstab
+          mount -o bind /dev ${rootmnt}/dev
+          mount -o bind /proc ${rootmnt}/proc
+          mount -o bind /sys ${rootmnt}/sys
     change_kernelparams ${rootmnt}/etc/default/grub
 	  chroot /root /bin/bash -c " \
 	    sed -i -e 's/use_lvmetad = 1/use_lvmetad = 0/g' /etc/lvm/lvm.conf; \
@@ -527,6 +544,9 @@ if [ "x${IPXEHTTP}" != 'x' ]; then
 	    grub-install --efi-directory=/boot/efi; \
 	    sed -i -e 's/use_lvmetad = 0/use_lvmetad = 1/g' /etc/lvm/lvm.conf; \
 	    exit"
+	  if [ -f ${rootmnt}/etc/fstab.org ]; then
+            mv ${rootmnt}/etc/fstab.org ${rootmnt}/etc/fstab
+	  fi
 	log_end_msg
 	umount ${rootmnt}/sys
 	umount ${rootmnt}/proc

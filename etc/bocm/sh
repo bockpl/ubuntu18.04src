@@ -1,1 +1,0 @@
-/usr/lib/initramfs-tools/bin/busybox

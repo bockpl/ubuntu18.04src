@@ -11,7 +11,8 @@ RUN set -xe \
     && apt-get -y upgrade \
     && apt-get -y autoremove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 # Odminimalizowanie obrazu
 RUN yes | unminimize
@@ -21,7 +22,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends apt-utils linux-image-generic grub-efi \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 RUN sed -i -e 's/root:\*/root:$6$MpxiqUwV$grZXHjiqaj2YmDgoJprGSij3v62DdE5tWMrRAmzDX7Pifrt2G8IwDz91Pq7k2wsEVE1hheyVNz.K9U2ZR0POT0/g' /etc/shadow
 
@@ -34,7 +36,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends lvm2 xfsprogs \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 # Dodanie standardowych pakietów
 # policykit-1 - obsługa nadawania hostname z dhcp
@@ -43,7 +46,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends openssh-server vim gdisk ifenslave vlan coreutils policykit-1 \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 # Dodanie kluczy
 RUN mkdir /root/.ssh && chmod 0700 /root/.ssh
@@ -60,7 +64,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends docker.io \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 # Docker compose
 # niezbędny jest curl
@@ -69,7 +74,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends curl jq \
     && apt-get autoremove -y \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 # docker-compose w najnowszej wersji
 RUN VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases/latest | jq .name -r) \
@@ -86,7 +92,8 @@ RUN set -xe \
     && apt-get install -y --no-install-recommends moosefs-pro-client \
     && apt-get -y autoremove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 # Grub timeout workaround ustawione na 3s
 RUN set -xe \
@@ -104,7 +111,9 @@ RUN set -xe \
     && apt-get -y autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /ansible
+    && rm -rf /ansible \
+    && rm -rf /tmp/*
 
 # Dodanie wersji
 ADD VERSION /VERSION
+
