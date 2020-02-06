@@ -108,3 +108,4 @@ RUN set -xe \
 
 # Dodanie wersji
 ADD VERSION /VERSION
+

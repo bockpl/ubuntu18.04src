@@ -45,11 +45,14 @@ fi
 
 # Release DHCP address and flush ip from interface
 # Network iterface configure after boot real system from disk
-#dhclient -r eth0
+dhclient -r eth0
 ip addr flush eth0
 ip link set eth0 down
 
 maybe_break end
+
+# Obejscie w celu pozbycia sie domyslnego adresu ip przez DHCP, dodatkowo chodzi o wyczyszczenie opcji /proc/cmdline kernela
+reboot
 
 exit 0
 
