@@ -8,6 +8,7 @@ Lista funkcji:
   getDiskCount
   cleanDisk
   makeStdPartition
+  makeVolumes
   makeVolumes_new
   syncDir
   bocm_top (in initramfs only)
@@ -62,20 +63,28 @@ lvm() {
 
 # Funkcja uruchamiania polecen zewnętrzych
 _run() {
-  local RESULT="OK"
+  local _result="OK"
 
-  RESULT=$(eval "$@" 2>&1)
-  RET=$?
+  if [ "x${DEBUG}" = "xsym" ]; then
+    echo "$@" >&2
+    echo -en ${_result}
+    return 0
+  else
+    _result=$(eval "$@" 2>&1)
+    local RET=$?
+  fi
+
   if [ $RET != 0 ]; then
     if [ "x${MFSUPPER}" = 'x' ]; then
-      RESULT="$RESULT \n Exit status: $RET \n Error in command: $*"
+      _result="$RESULT \n Exit status: $RET \n Error in command: $*"
     else
       panic "$RESULT \n Exit status: $RET \n Error in command: $*"
     fi
   else
-    RESULT="OK"
+    _result="OK"
   fi
-  echo -e $RESULT
+  echo -en ${_result}
+  return ${RET}
 }
 
 # Funkcja zwraca wielkośćw GB np.(1.75) katalogu wskazanego w parametrze
@@ -106,6 +115,8 @@ getDiskCount() {
   echo -e "$RESULT"
 }
 
+# !!!!! ***** Do poprawy, kasuje lv i pv mirrorowane!
+#
 # Czyszczenie dysku, wymazuje wszystko bez pytania
 # Parametry:
 #   devDisk - sciezka urzadzenia blokowego dysku
@@ -113,22 +124,24 @@ getDiskCount() {
 #   OK - jesli wszystko przebieglo pomyslnie
 #   Komunikat bledu - w przypadku wystapienia dowolnego bledu
 cleanDisk() {
-  local RESULT="OK"
+  local _result="OK"
   local devDisk=$1
 
+   local vgs=""
+   local lvs=""
+   local pvs=""
+
   # Ustalamy czy sa PV i VG
-  local vgs=""
   vgs=$(lvm pvs --noheadings -o vg_name -S pv_name=~"$devDisk.*")
-  local pvs=""
   for vg in $vgs; do
-    RESULT=$(_run "lvm vgchange -a n \"$vg\"")
-    pvs=$(lvm pvs --noheadings -o pv_name -S vg_name="$vg")
-    for pv in $pvs; do
-      RESULT=$(_run "lvm pvremove -y -ff $pv")
-    done
+    _result=$(_run "lvm vgchange -a n \"${vg}\"") || break
+    pvs=$(lvm pvs --noheadings -o pv_name -S vg_name="${vg}"|grep ${devDisk} |  awk '{ print $1 }')
+    _result=$(_run "lvm pvremove -y -ff ${pvs}") || break
+    _result=$(_run "vgreduce --removemissing --force \"${vg}\"") || break
+    _result=$(_run "lvm vgchange -a y -P \"${vg}\"") || break
   done
-  RESULT=$(_run "sgdisk -Z $devDisk")
-  echo -e "$RESULT"
+  _result=$(_run "sgdisk -Z $devDisk")
+  printf "${_result}"
 }
 
 # Tworzenie standardowego schematu podzialu dysku na partycje
@@ -139,31 +152,217 @@ cleanDisk() {
 #   OK - jesli wszystko przebieglo pomyslnie
 #   Komunikat bledu - w przypadku wystapienia dowolnego bledu
 makeStdPartition() {
-  local RESULT="OK"
-  local devDisk=$1
-  local partFile=$2
+  local _result="OK"
+  local _devdisk=$1
+  local _partfile=$2
 
-  if [ "x${partFile}" != 'x' ] && [ -f ${partFile} ]; then
+  local _SGDISK=/sbin/sgdisk
+  local _SEC_SIZE=$(cat /sys/block/${_devdisk#/dev}/queue/physical_block_size || echo 4096)
+
+  if [ "x${_partfile}" != 'x' ] && [ -f ${_partfile} ]; then
     source ${BOCMDIR}/bash-yaml/script/yaml.sh
 
-    create_variables "${partFile}"
+    create_variables "${_partfile}"
 
     for ((p = 0; p < ${#partition__number[@]}; p++)); do
-      RESULT=$(_run "$SGDISK -n ${partition__number[$p]}::+${partition__size[$p]} $devDisk \
-	-t ${partition__number[$p]}:${partition__type[$p]} -c ${partition__number[$p]}:${partition__name[$p]}")
+      _result=$(_run "${_SGDISK} -n ${partition__number[$p]}::+${partition__size[$p]} ${_devdisk} -t ${partition__number[$p]}:${partition__type[$p]} -c ${partition__number[$p]}:${partition__name[$p]}") || break      
+      
+      case ${partition__fstype[$p]} in
+      "vfat") _result=$(_run "/sbin/mkfs.vfat -F 32 ${_devdisk}${partition__number[$p]}") ;;
+      *) if [ "x${partition__type[$p]}" != 'x8e00' ]; then
+        _result=$(_run "/sbin/mkfs.xfs -s size=${_SEC_SIZE} -f -L ${partition__name[$p]} ${_devdisk}${partition__number[$p]}")
+      fi
+      esac
+      if [ $? != 0 ]; then
+        printf ${_result}
+        return 1
+      fi
     done
   fi
+  printf "${_result}"
+  return 0
+}
 
-  # Stworz partycje EFI
-  #RESULT=$(_run "$SGDISK -n 1::+200M $devDisk -t 1:ef00  -c 1:EFI")
+# Tworzenie standardowego schematu podzialu na wolumeny
+# Parametry:
+#   DISK - sciezka urzadzenia blokowego dysku
+#   VOLUMES_FILE - sciezka do pliku opisu wolumenow
+# Wynieki:
+#   return_code = 0 - jesli wszystko przebieglo pomyslnie
+#   return_code = 1 - w przypadku wystapienia dowolnego bledu, wyswietlany jest tez komunikat
+makeVolumes() {
+  local _result="ENTER"
+  local _disk=$1
+  local _volFile=$2
+  local _vgname=""
+  local _lvname=""
+  local _makeFS=$(false)
 
-  # Stworz partycje LVM
-  #RESULT=$(_run "$SGDISK -n 2:: $devDisk -t 2:8e00 -c 2:LVM")
+  local _SGDISK=/sbin/sgdisk
+  local _SEC_SIZE=$(cat /sys/block/${_disk#/dev}/queue/physical_block_size || echo 4096)
+  local _SCSIchan=$(ls "/sys/block/${_disk#/dev}/device/scsi_device" | awk '{gsub(":","", $1); print}')
 
-  # Tworzenie systemu plikow fat32
-  RESULT=$(_run "/sbin/mkfs.vfat -F 32 ${devDisk}1")
+  if [ "x${_volFile}" != 'x' ] && [ -f ${_volFile} ]; then
+    source ${BOCMDIR}/bash-yaml/script/yaml.sh
 
-  echo -e "$RESULT"
+    create_variables "${_volFile}"
+
+    # Tworzenie PV i VG
+    for ((v = 0; v < ${#volume__part[@]}; v++)); do
+      # Jezeli nie istnieje PV to utworz
+      local npv=""
+      npv=$(lvm pvs --noheadings -o pv_name -S pv_name="${_disk}${volume__part[$v]}" | awk '{ print $1 }')
+      if [ "x$npv" != "x${_disk}${volume__part[$v]}" ]; then
+        _result=$(_run "lvm pvcreate ${_disk}${volume__part[$v]}")
+        if [ $? != 0 ]; then
+          break
+        fi
+      fi
+
+      # Parsowanie vgname z nazwy wolumenu zmienna volume_dev np mapper/vgroot-lvroot
+      _vgname=${volume__dev[$v]%%-*}
+      _vgname=${_vgname##mapper/} 
+
+      # Tworzenie VG
+      # Jezeli istnieje VG o podanej nazwie to dodaj PV
+      # Jezeli nie istnieje VG o podanej nazwie to utworz i dodaj PV
+      local nvg=""
+      nvg=$(lvm vgs --noheadings -o vg_name -S vg_name=${_vgname} | awk '{ print $1 }')
+      if [[ "x$nvg" == "x${_vgname}" ]]; then
+        # Jezeli w VG nie ma PV to dodaj
+        local npvinvg=""
+        npvinvg=$(lvm vgs --noheadings -o pv_name -S vg_name=${_disk},pv_name="${_disk}${volume__part[$v]}"  | awk '{ print $1 }')
+        if [[ "x$npvinvg" != "x${_disk}${volume__part[$v]}" ]]; then
+          _result=$(_run "lvm vgextend ${_vgname} ${_disk}${volume__part[$v]}")
+          if [ $? != 0 ]; then
+            break
+          fi
+        fi
+      else
+        _result=$(_run "lvm vgcreate -y ${_vgname} ${_disk}${volume__part[$v]}")
+        if [ $? != 0 ]; then
+          break
+        fi  
+      fi
+    done
+
+    # Tworzenie LV
+    if [ ${_result} == "OK" ]; then
+      for ((v = 0; v < ${#volume__part[@]}; v++)); do
+        # Parsowanie vgname i lvname z nazwy wolumenu zmienna volume_dev np mapper/vgroot-lvroot
+        _lvname=${volume__dev[$v]##*-}
+        _vgname=${volume__dev[$v]%%-*}
+        _vgname=${_vgname##mapper/}
+
+        if [ "x${volume__raid[$v]}" == "xraid1" ]; then
+          # Jezeli istnieje juz LV o podanej nazwie i nie znajduje sie na przetwarzanym PV
+          local nlv=$(lvm lvs --noheadings -o lv_name -S lv_name="$_lvname" | awk '{ print $1 }')
+          local devlv=$(lvm lvs --noheadings -o devices -S lv_name="$_lvname" | awk '{ print $1 }' | grep "${_disk}${volume__part[$v]}")
+          if [[ "x${nlv}" = "x${_lvname}" && "x${devlv}" = "x" ]]; then
+            # Liczba kopii mirror-a
+            local stripes=$(lvm lvs --noheadings -o stripes -S lv_name="$_lvname" | awk '{ print $1 }')
+            printf "Converting logical volume ${_lvname} to mirror...\n"
+            #_result=$(_run "lvm lvconvert -y -m${stripes} --type mirror --mirrorlog core -i 3 /dev/${volume__dev[$v]}")
+            _result=$(_run "lvm lvconvert -y -m${stripes} --alloc anywhere /dev/${volume__dev[$v]}")
+            _result=$(_run "lvm lvchange -ay /dev/${volume__dev[$v]}")
+            local syncP=0
+            until [ $syncP = "100" ]; do
+              printf "\r"
+              syncP=$(lvm lvs --noheadings -o sync_percent -S lv_name="${_lvname}" | awk '{ printf "%d\n", $1 }')
+              printf " Waitng for ${_lvname} mirror syncing: ${syncP}%%"
+              sleep 1
+            done
+            printf "\nDone\n"
+          else
+            # Jezeli nie istnieje LV o podanej nazwie
+            printf "Creating logical volume ${_lvname}..."
+            if [ ${volume__size[$v]} == "0" ]; then
+              if [ $v = $(expr ${#volume__part[@]} - 1) ]; then
+                volume__size[$v]="99%PVS"
+                local _SCSIchan=$(ls "/sys/block/${_disk#/dev}/device/scsi_device" | awk '{gsub(":","", $1); print}')
+                _lvname="${_lvname}_${_SCSIchan}"
+                # Modyfikacja nazwy urzadzenia, poniewaz zmienia sie nazwa LV
+                volume__dev[$v]="${volume__dev[$v]}_${_SCSIchan}"
+              else
+                _result="Error: Volume size \"0\" is only valid for last volume"
+                break
+              fi
+              _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")     
+            else
+              _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
+            fi
+            if [ "$?" != 0 ]; then
+              break
+            fi
+            _makeFS=$(true)
+            printf "Done\n"
+          fi
+          continue
+        fi #raid=raid1
+
+        if [ "x${volume__raid[$v]}" == "xn" ]; then
+          # Jezeli wolumen o podanej nazwie juz istnieje, nic nie rob
+          if [ "x$(lvm lvs --noheadings -o lv_name -S lv_name=${_lvname}| awk '{print $1}')" == "x${_lvname}" ]; then
+            continue
+          fi
+          printf "Creating logical volume ${_lvname}..."
+          if [ "x${volume__name[$v]}" == "xSWAP" ]; then
+            if [ ${volume__size[$v]} == "0" ]; then
+              volume__size[$v]=$(echo "$(getMemorySize) $(getDiskCount)" | awk '{printf("%.2f\n", 2*$1/$2)}')
+            fi
+          else
+            if [ ${volume__size[$v]} == "0" ]; then
+              # Jezeli to ostatni wolumen
+              if [ $v = $(expr ${#volume__part[@]} - 1) ]; then
+                volume__size[$v]="99%PVS"
+                _lvname="${_lvname}_${_SCSIchan}"
+              else
+                _result="Error: Volume size \"0\" is only valid for last volume"
+                break
+              fi
+              _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
+              if [ "$?" != 0 ]; then
+                break
+              fi
+            fi
+          fi
+          _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
+          if [ "$?" != 0 ]; then
+            break
+          fi
+          _makeFS=$(true)
+          printf "Done\n"
+          continue
+        else
+          _result="Error: Bad value for \"raid\" field for volume ${volume__dev[$v]}"
+          if [ "$?" != 0 ]; then
+            break
+          fi
+          continue
+        fi #raid=n
+
+        if [ _makeFS ]; then
+          case ${volume__fstype[$v]} in
+            "vfat") _result=$(_run "/sbin/mkfs.vfat -F 32 /dev/${volume__dev[$v]}") ;;
+            "xfs") 
+              # Parsowanie lvname z nazwy wolumenu zmienna volume_dev np mapper/vgroot-lvroot
+              _lvname=${volume__dev[$v]##*-}
+              _result=$(_run "/sbin/mkfs.xfs -s size=${_SEC_SIZE} -f -L ${_lvname} /dev/${volume__dev[$v]}")
+              ;;
+          esac
+        fi
+      done
+    fi # Tworzenie LV
+  else
+    _result="Error: Volumes file not exist! - ${_volFile}"
+  fi
+
+  if [ "${_result}" == "OK" ]; then
+    return 0
+  else
+    echo -ne "${_result}"
+    return 1
+  fi
 }
 
 # Tworzenie standardowego schematu podzialu na wolumeny
@@ -412,10 +611,10 @@ bocm_top() {
   fi
 
   # Jezeli nie jest zdefiniowane lub ma jedna z wartosci
-  if [[ "x${MANUAL_DISK_MANAGE}" == @(x|xn|xno|xfasle|x0) ]]; then
+  if [[ "x${MANUAL_DISK_MANAGE}" =~ ^(x|xn|xno|xfasle|x0)$ ]]; then
 
     # Jezeli ma jedna z wartosci to Force reinitialization?
-    if [[ "x${MAKE_VOLUMES}" == @(xy|xY|xyes|xtrue|x1) ]]; then
+    if [[ "x${MAKE_VOLUMES}" =~ ^(xy|xY|xyes|xtrue|x1)$ ]]; then
       log_warning_msg "Node reinitialization requested"
       log_begin_msg "Erasing root disk (${DISKDEV})"
       RESULT=$(cleanDisk ${DISKDEV})
@@ -430,7 +629,7 @@ bocm_top() {
         echo -e "$RESULT"
         panic "Error in: makeStdPartition ${DISKDEV}"
       fi
-      makeVolumes_new ${DISKDEV} ${VOLUMES_FILE}
+      makeVolumes ${DISKDEV} ${VOLUMES_FILE}
       if [[ "$?" != "0" ]]; then
         panic "Error in: makeVolumes ${DISKDEV}"
       fi
@@ -583,5 +782,3 @@ make_network_config_file() {
   /bin/ln -sf "interfaces.${BOOT}" interfaces || panic "Error making network configuration file!"
   cd "$OLDDIR"
 }
-
-#ZMIENIONY
