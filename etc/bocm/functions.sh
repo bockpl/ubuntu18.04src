@@ -46,7 +46,7 @@ else
   MANUAL_DISK_MANAGE="no"
   CCRSYNCDELETE="yes"
 fi
-if [ -s "${ROOTSTANDARD}/${BOCMDIR}/${HOSTNAME}" ]; then . "${ROOTSTANDARD}/${BOCMDIR}/${HOSTNAME}"; fi
+if [ -s "${ROOTSTANDARD}/${BOCMDIR}/${HOSTNAME}" ]; then . "${ROOTSTANDARD}/${BOCMDIR}/${HOSTNAME}"; fi 
 
 # Funkcja zastępuje polecenie by dodac w kazdym wypadku parametr
 # --config "global { use_lvmetad = 0 }"
@@ -83,7 +83,7 @@ _run() {
   else
     _result="OK"
   fi
-  echo -en ${_result}
+  printf ${_result}
   return ${RET}
 }
 
@@ -144,6 +144,21 @@ cleanDisk() {
   printf "${_result}"
 }
 
+unsetArrays() {
+  unset partition__number
+  unset partition__name
+  unset partition__type
+  unset partition__fstype
+  unset partition__size
+  unset volume__part
+  unset volume__name
+  unset volume__dev
+  unset volume__fstype
+  unset volume__size
+  unset volume__mnt
+  unset volume__raid
+}
+
 # Tworzenie standardowego schematu podzialu dysku na partycje
 # Parametry:
 #   devDisk - sciezka urzadzenia blokowego dysku
@@ -179,6 +194,7 @@ makeStdPartition() {
       fi
     done
   fi
+  unsetArrays
   printf "${_result}"
   return 0
 }
@@ -196,7 +212,7 @@ makeVolumes() {
   local _volFile=$2
   local _vgname=""
   local _lvname=""
-  local _makeFS=$(false)
+  local _makeFS=false
 
   local _SGDISK=/sbin/sgdisk
   local _SEC_SIZE=$(cat /sys/block/${_disk#/dev}/queue/physical_block_size || echo 4096)
@@ -294,10 +310,9 @@ makeVolumes() {
             if [ "$?" != 0 ]; then
               break
             fi
-            _makeFS=$(true)
+            _makeFS="true"
             printf "Done\n"
           fi
-          continue
         fi #raid=raid1
 
         if [ "x${volume__raid[$v]}" == "xn" ]; then
@@ -330,18 +345,16 @@ makeVolumes() {
           if [ "$?" != 0 ]; then
             break
           fi
-          _makeFS=$(true)
+          _makeFS="true"
           printf "Done\n"
-          continue
         else
           _result="Error: Bad value for \"raid\" field for volume ${volume__dev[$v]}"
           if [ "$?" != 0 ]; then
             break
           fi
-          continue
         fi #raid=n
 
-        if [ _makeFS ]; then
+        if ${_makeFS}; then
           case ${volume__fstype[$v]} in
             "vfat") _result=$(_run "/sbin/mkfs.vfat -F 32 /dev/${volume__dev[$v]}") ;;
             "xfs") 
@@ -357,10 +370,134 @@ makeVolumes() {
     _result="Error: Volumes file not exist! - ${_volFile}"
   fi
 
+  unsetArrays
   if [ "${_result}" == "OK" ]; then
     return 0
   else
     echo -ne "${_result}"
+    return 1
+  fi
+}
+
+# Montowanie wszystki systemow plikow do partycji root
+# Paramtry:
+#   dev - sciezka do dysku np. /dev/sda
+#   rootmnt - sciezka montowania rootfs np. /rootmnt
+#   volumes_file - sciezka do pliku z opisem wolumenow
+# Wyniki:
+#   OK - jezeli wszystko OK, ret code <> 0
+#   Komunikat bledu - w przypadku niepowodzenia, ret code = 0
+mountAll() {
+  local _dev=$1
+  local _rootmnt=$2
+  local _volFile=$3
+  local _result="OK"
+
+  if [ "x${_volFile}" != 'x' ] && [ -f ${_volFile} ]; then
+    source ${BOCMDIR}/bash-yaml/script/yaml.sh
+
+    create_variables "${_volFile}"
+    # Montowanie partycji
+    log_begin_msg "Mounting all partitions ${_dev}"
+    for ((p = 0; p < ${#partition__number[@]}; p++)); do
+      if [[ "x${partition__mnt[$p]}" != "x" && "x${partition__mnt[$p]}" != "x/" && "x${partition__mnt[$p]}" != "x\"\"" ]]; then
+        _result=$(_run "mkdir -p ${_rootmnt}${partition__mnt[$p]}") || break
+
+        if [[ "x${partition__mntopt[$p]}" != "x" && "x${partition__mntopt[$p]}" != "x\"\"" ]]; then
+          _result=$(_run "mount -o ${partition__mntopt[$p]} ${_dev}${partition__number[$p]} ${_rootmnt}${partition__mnt[$p]}")
+        else
+          _result=$(_run "mount ${_dev}${partition__number[$p]} ${_rootmnt}${partition__mnt[$p]}")
+        fi
+        if [ ${_result} != "OK" ]; then
+          printf "Error mounting partition ${_dev}${partition__number[$p]}! ${_result}"
+        fi
+      fi
+    done
+    log_end_msg
+    # Montowanie wolumenow LVM
+    log_begin_msg "Mounting all volumes"
+    for ((v = 0; v < ${#volume__part[@]}; v++)); do
+      if [[ "x${volume__mnt[$v]}" != "x" && "x${volume__mnt[$v]}" != "x/" && "x${volume__mnt[$v]}" != "x\"\"" ]]; then
+        _result=$(_run "mkdir -p ${_rootmnt}${volume__mnt[$v]}") || break
+        if [[ "x${volume__mntopt[$v]}" != "x" && "x${volume__mntopt[$v]}" != "x\"\"" ]]; then
+          _result=$(_run "mount -o ${volume__mntopt[$v]} /dev/${volume__dev[$v]} ${_rootmnt}${volume__mnt[$v]}")
+        else
+          _result=$(_run "mount /dev/${volume__dev[$v]} ${_rootmnt}${volume__mnt[$v]}")
+        fi
+        if [ ${_result} != "OK" ]; then
+          printf "Error mounting volume dev/${volume__dev[$v]}! ${_result}"
+        fi
+      fi
+    done
+    log_end_msg
+  else
+    _result="Error: Volumes file not exist! - ${_volFile}\n"
+  fi
+
+  unsetArrays
+  printf ${_result}
+  if [ _result == "OK" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Odmontowanie wszystki systemow plikow do partycji root
+# Paramtry:
+#   rootmnt - sciezka montowania rootfs np. /rootmnt
+#   volumes_file - sciezka do pliku z opisem wolumenow
+# Wyniki:
+#   OK - jezeli wszystko OK, ret code <> 0
+#   Komunikat bledu - w przypadku niepowodzenia, ret code = 0
+umountAll() {
+  local _rootmnt=$1
+  local _volFile=$2
+  local _result="OK"
+
+  if [ "x${_volFile}" != 'x' ] && [ -f ${_volFile} ]; then
+    source ${BOCMDIR}/bash-yaml/script/yaml.sh
+
+    create_variables "${_volFile}"
+
+    # Odmontowanie wolumenow LVM
+    log_begin_msg "Mounting all volumes"
+    for ((v = $(expr ${#volume__part[@]} - 1); v >= 0; v--)); do
+      if [[ "x${volume__mnt[$v]}" != "x" && "x${volume__mnt[$v]}" != "x/" && "x${volume__mnt[$v]}" != "x\"\"" ]]; then
+        $(mount | grep -q ${volume__mnt[$v]})
+        if [ $? = 0 ]; then
+          _result=$(_run "umount ${_rootmnt}${volume__mnt[$v]}")
+        fi
+        if [ ${_result} != "OK" ]; then
+          printf "Error unmounting ${_rootmnt}${volume__mnt[$v]}! ${_result}"
+        fi
+      fi
+    done
+    log_end_msg
+
+    # Odmontowanie partycji
+    log_begin_msg "Unmounting all partitions"
+    for ((p = $(expr ${#partition__number[@]} - 1); p >= 0; p--)); do
+      if [[ "x${partition__mnt[$p]}" != "x" && "x${partition__mnt[$p]}" != "x/" && "x${partition__mnt[$p]}" != "x\"\"" ]]; then
+        $(mount | grep -q ${partition__mnt[$p]})
+        if [ $? = 0 ]; then
+          _result=$(_run "umount ${_rootmnt}${partition__mnt[$p]}")
+        fi
+        if [ ${_result} != "OK" ]; then
+          printf "Error unmounting ${_rootmnt}${partition__mnt[$p]}! ${_result}"
+        fi
+      fi
+    done
+    log_end_msg
+  else
+    _result="Error: Volumes file not exist! - ${_volFile}\n"
+  fi
+
+  unsetArrays
+  printf ${_result}
+  if [ _result == "OK" ]; then
+    return 0
+  else
     return 1
   fi
 }
@@ -629,7 +766,7 @@ bocm_top() {
         echo -e "$RESULT"
         panic "Error in: makeStdPartition ${DISKDEV}"
       fi
-      makeVolumes ${DISKDEV} ${VOLUMES_FILE}
+      makeVolumes ${DISKDEV} ${BOCMDIR}/partitions.yml
       if [[ "$?" != "0" ]]; then
         panic "Error in: makeVolumes ${DISKDEV}"
       fi
@@ -715,12 +852,12 @@ bocm_bottom() {
   fi
 
   if [ "x${IPXEHTTP}" != 'x' ]; then
-    # mount /boot/efi partition before syncing
     mount -o remount,rw ${rootmnt} || panic "could not remount rw ${rootmnt}"
-    if ! [[ -d ${rootmnt}/boot/efi ]]; then
-      mkdir -p ${rootmnt}/boot/efi
-    fi
-    mount -o noexec,uid=0,gid=4,dmask=0023,fmask=0133 ${DISKDEV}1 ${rootmnt}/boot/efi
+    #if ! [[ -d ${rootmnt}/boot/efi ]]; then
+    #  mkdir -p ${rootmnt}/boot/efi
+    #fi
+    #mount -o noexec,uid=0,gid=4,dmask=0023,fmask=0133 ${DISKDEV}1 ${rootmnt}/boot/efi
+    mountAll ${DISKDEV} ${rootmnt} ${BOCMDIR}/partitions.yml
 
     cd ${rootmnt}
     log_begin_msg "Downloading system image"
@@ -766,7 +903,7 @@ bocm_bottom() {
     cd /
   fi
 
-  umount ${rootmnt}/boot/efi
+  umountAll ${rootmnt} ${BOCMDIR}/partitions.yml
   mount -o remount,ro ${rootmnt} || panic "could not remount ro ${rootmnt}"
 }
 
