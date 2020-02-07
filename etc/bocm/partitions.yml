@@ -10,11 +10,16 @@ partition:
     name: EFI
     type: ef00
     fstype: vfat
+    mnt: /boot/efi
+    mntopt: "noexec,uid=0,gid=4,dmask=0023,fmask=0133"
     size: 200M
   -
     number: 2
     name: ROOT
     type: 8e00
+    fstype: ""
+    mnt: ""
+    mntopt: ""
     size: 0
 
 volume:
@@ -25,6 +30,7 @@ volume:
     fstype: ""
     size: 1G
     mnt: ""
+    mntopt: ""
     raid: raid1
   -
     part: 2
@@ -33,12 +39,14 @@ volume:
     fstype: xfs
     size: 4G
     mnt: /
+    mntopt: ""
     raid: raid1
   - 
     part: 2
-    name: CH
-    dev: mapper/vgroot-lvch
+    name: lvvar
+    dev: mapper/vgroot-lvvar
     fstype: xfs
-    size: 0
-    mnt: /mnt/lvchunk
+    size: 500M
+    mnt: /var
+    mntopt: ""
     raid: n
