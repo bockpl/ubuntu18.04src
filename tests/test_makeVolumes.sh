@@ -20,7 +20,7 @@ fi
 echo $DEV
 #export DEBUG=sym
 _result=$(cleanDisk ${DEV})
-_result=$(makeStdPartition ${DEV} "${BOCMDIR}/partitions.yml")
+makeStdPartition ${DEV} "${BOCMDIR}/partitions.yml"
 #set -x
 makeVolumes ${DEV} "${BOCMDIR}/partitions.yml"
 #echo ${_result}

@@ -37,7 +37,7 @@ if [ "x$ROOTSTANDARD" = "x" ]; then
 fi
 
 if [ -s "${ROOTSTANDARD}/${BOCMDIR}/default" ]; then
-  . ${ROOTSTANDARD}/${BOCMDIR}/default
+  source ${ROOTSTANDARD}/${BOCMDIR}/default
 else
   DISKDEV=/dev/sda
   VG_NAME=vgroot
@@ -64,6 +64,7 @@ lvm() {
 # Funkcja uruchamiania polecen zewnętrzych
 _run() {
   local _result="OK"
+  local _retcode=0
 
   if [ "x${DEBUG}" = "xsym" ]; then
     echo "$@" >&2
@@ -71,20 +72,20 @@ _run() {
     return 0
   else
     _result=$(eval "$@" 2>&1)
-    local RET=$?
+    _retcode=$?
   fi
 
-  if [ $RET != 0 ]; then
+  if [ ${_retcode} != 0 ]; then
     if [ "x${MFSUPPER}" = 'x' ]; then
-      _result="$RESULT \n Exit status: $RET \n Error in command: $*"
+      _result="Error in command: $* \n  ${_result} \n  Exit status: ${_retcode} \n "
     else
-      panic "$RESULT \n Exit status: $RET \n Error in command: $*"
+      panic "Error in command: $* \n  ${_result} \n  Exit status: ${_retcode} \n "
     fi
   else
     _result="OK"
   fi
   printf ${_result}
-  return ${RET}
+  return ${_retcode}
 }
 
 # Funkcja zwraca wielkośćw GB np.(1.75) katalogu wskazanego w parametrze
@@ -149,6 +150,8 @@ unsetArrays() {
   unset partition__name
   unset partition__type
   unset partition__fstype
+  unset partition__mnt
+  unset partition__mntopt
   unset partition__size
   unset volume__part
   unset volume__name
@@ -156,6 +159,7 @@ unsetArrays() {
   unset volume__fstype
   unset volume__size
   unset volume__mnt
+  unset volume__mntopt
   unset volume__raid
 }
 
@@ -270,6 +274,27 @@ makeVolumes() {
         _vgname=${volume__dev[$v]%%-*}
         _vgname=${_vgname##mapper/}
 
+        if [ "x${volume__name[$v]}" == "xSWAP" ]; then
+          if [ ${volume__size[$v]} == "0" ]; then
+            volume__size[$v]=$(echo "$(getMemorySize) $(getDiskCount)" | awk '{printf("%.2f\n", 2*$1/$2)}')
+          fi
+        else
+          if [ ${volume__size[$v]} == "0" ]; then
+            # Jezeli to ostatni wolumen
+            if [ $v = $(expr ${#volume__part[@]} - 1) ]; then
+              volume__size[$v]="99%PVS"
+              _lvname="${_lvname}_${_SCSIchan}"
+            else
+              _result="Error: Volume size \"0\" is only valid for last volume"
+              break
+            fi
+            _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
+            if [ "$?" != 0 ]; then
+              break
+            fi
+          fi
+        fi
+
         if [ "x${volume__raid[$v]}" == "xraid1" ]; then
           # Jezeli istnieje juz LV o podanej nazwie i nie znajduje sie na przetwarzanym PV
           local nlv=$(lvm lvs --noheadings -o lv_name -S lv_name="$_lvname" | awk '{ print $1 }')
@@ -292,17 +317,8 @@ makeVolumes() {
           else
             # Jezeli nie istnieje LV o podanej nazwie
             printf "Creating logical volume ${_lvname}..."
-            if [ ${volume__size[$v]} == "0" ]; then
-              if [ $v = $(expr ${#volume__part[@]} - 1) ]; then
-                volume__size[$v]="99%PVS"
-                local _SCSIchan=$(ls "/sys/block/${_disk#/dev}/device/scsi_device" | awk '{gsub(":","", $1); print}')
-                _lvname="${_lvname}_${_SCSIchan}"
-                # Modyfikacja nazwy urzadzenia, poniewaz zmienia sie nazwa LV
-                volume__dev[$v]="${volume__dev[$v]}_${_SCSIchan}"
-              else
-                _result="Error: Volume size \"0\" is only valid for last volume"
-                break
-              fi
+            # Jezeli wielkowsc okreslona procentowo
+            if [ $(expr index ${volume__size[$v]} %) != "0" ]; then
               _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")     
             else
               _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
@@ -321,26 +337,6 @@ makeVolumes() {
             continue
           fi
           printf "Creating logical volume ${_lvname}..."
-          if [ "x${volume__name[$v]}" == "xSWAP" ]; then
-            if [ ${volume__size[$v]} == "0" ]; then
-              volume__size[$v]=$(echo "$(getMemorySize) $(getDiskCount)" | awk '{printf("%.2f\n", 2*$1/$2)}')
-            fi
-          else
-            if [ ${volume__size[$v]} == "0" ]; then
-              # Jezeli to ostatni wolumen
-              if [ $v = $(expr ${#volume__part[@]} - 1) ]; then
-                volume__size[$v]="99%PVS"
-                _lvname="${_lvname}_${_SCSIchan}"
-              else
-                _result="Error: Volume size \"0\" is only valid for last volume"
-                break
-              fi
-              _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
-              if [ "$?" != 0 ]; then
-                break
-              fi
-            fi
-          fi
           _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
           if [ "$?" != 0 ]; then
             break
