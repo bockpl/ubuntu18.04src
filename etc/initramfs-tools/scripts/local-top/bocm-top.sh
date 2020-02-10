@@ -14,10 +14,9 @@ esac
 
 # Begin real processing below this line
 . /scripts/functions
-. /scripts/custom_functions
 
 # Jezeli nie jest zdefiniowany szablon na MFS i nie jest to start z iPXE http to nic nie rob
-if [ "x${MFSUPPER}" = "x" ] && [ "x${IPXEHTTP}" = "x" ]; then
+if [ "x${IPXEHTTP}" = "x" ]; then
   exit 0
 fi
 
@@ -38,51 +37,11 @@ configure_networking
 log_end_msg
 
 maybe_break after_net_config
-maybe_break before_mfsnet_config
 
-if [ "x${MFSUPPER}" != "x" ]; then
-  if [ "x${MFSMANUALNET}" = "x" ]; then
-    log_begin_msg "Configuring mfs networking"
-    if [ -n $MFSINT ]; then
-      configure_mfs_network $MFSINT
-    fi
-    log_end_msg
-    maybe_break after_mfsnet_config
-  else
-    log_begin_msg "Configuring lo interface"
-    ip link set lo up
-    log_end_msg
-
-    panic "Please configure mfs networking manually"
-  fi
-  maybe_break before_mount_rootstandard
-
-  log_begin_msg "Mounting template from mfs as rootstandard"
-  mount_rootstandard
-  log_end_msg
-
-  maybe_break after_mount_rootstandard
-
-  if [ ${readonly} = y ]; then
-    roflag="ro"
-  else
-    roflag="rw"
-  fi
-
-  mount -o remount,${roflag} "${ROOTSTANDARD}"
-
-  ln -s "${ROOTSTANDARD}"/bin/bash /bin/bash
-
-  if (mount | grep ${ROOTSTANDARD} >/dev/null); then
-    bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ${ROOTSTANDARD}/${BOCMDIR}/functions.sh; bocm_top;"
-  fi
-fi
-
-if [ "x${IPXEHTTP}" != "x" ]; then
-  bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./${BOCMDIR}/functions.sh; ssh_config;"
-  bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./${BOCMDIR}/functions.sh; override_initrd_scripts;"
-  # Tu korzystamy z juz nadpisanych skryptow i funkcji
-  bin/bash -c ". /scripts/functions; . /scripts/custom_functions; . ./${BOCMDIR}/functions.sh; bocm_top;"
-fi
+bin/bash -c ". /scripts/functions; . ./${BOCMDIR}/functions.sh; ssh_config;"
+# Nadpisywanie plikow initramfs-u z katalogu konfiguracyjnego
+bin/bash -c ". /scripts/functions; . ./${BOCMDIR}/functions.sh; override_initrd_scripts;"
+# Tu korzystamy z juz nadpisanych skryptow i funkcji
+bin/bash -c ". /scripts/functions; . ./${BOCMDIR}/functions.sh; bocm_top;"
 
 exit 0
