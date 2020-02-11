@@ -1,6 +1,6 @@
 ---
 
-- name : "Instalacja podstawowego monitoringu. Zabbix i mmonit"
+- name : "Instalacja podstawowego monitoringu. Zabbix i monit"
   hosts: "{{ var_host }}"
   tasks:
     - name: Monitoring
