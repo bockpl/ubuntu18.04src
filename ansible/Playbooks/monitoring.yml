@@ -1,0 +1,13 @@
+---
+
+- name : "Instalacja podstawowego monitoringu. Zabbix i mmonit"
+  hosts: "{{ var_host }}"
+  tasks:
+    - name: Monitoring
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - zabbix-agent
+        - monit

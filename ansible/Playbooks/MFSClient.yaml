@@ -1,0 +1,19 @@
+---
+
+- name : "Instalacja klienta MFS"
+  hosts: "{{ var_host }}"
+  tasks:
+    - name: Add MFS official GPG key
+      apt_key:
+        url: http://ppa.moosefs.com/moosefs.key
+        state: present
+    - name: Add MFS repository
+      apt-repository:
+         repo: 'deb http://ppa.moosefs.com/3.0.101/apt/ubuntu/bionic bionic main'
+         state: present
+         filename: mfc_client
+         update_cache: yes
+    - name: Kubernetes binaries
+      apt:
+        name: moosefs-pro-client
+        state: present

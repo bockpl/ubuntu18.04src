@@ -1,0 +1,9 @@
+---
+
+- name : "Workaround grub timeout - timeout ustawiony na 3s"
+  hosts: "{{ var_host }}"
+  tasks:
+    - name: Grub timeout workaround 3s
+      lineinfile:
+        path: /etc/default/grub
+        line: GRUB_RECORDFAIL_TIMEOUT=3
