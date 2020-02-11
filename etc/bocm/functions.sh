@@ -263,60 +263,63 @@ makeVolumes() {
           fi
         fi
 
-        if [ "x${volume__raid[$v]}" == "xraid1" ]; then
-          # Jezeli istnieje juz LV o podanej nazwie i nie znajduje sie na przetwarzanym PV
-          local nlv=$(lvm lvs --noheadings -o lv_name -S lv_name="$_lvname" | awk '{ print $1 }')
-          local devlv=$(lvm lvs --noheadings -o devices -S lv_name="$_lvname" | awk '{ print $1 }' | grep "${_disk}${volume__part[$v]}")
-          if [[ "x${nlv}" = "x${_lvname}" && "x${devlv}" = "x" ]]; then
-            # Liczba kopii mirror-a
-            local stripes=$(lvm lvs --noheadings -o stripes -S lv_name="$_lvname" | awk '{ print $1 }')
-            printf "Converting logical volume ${_lvname} to mirror...\n"
-            #_result=$(_run "lvm lvconvert -y -m${stripes} --type mirror --mirrorlog core -i 3 /dev/${volume__dev[$v]}")
-            _result=$(_run "lvm lvconvert -y -m${stripes} --alloc anywhere /dev/${volume__dev[$v]}")
-            _result=$(_run "lvm lvchange -ay /dev/${volume__dev[$v]}")
-            local syncP=0
-            until [ $syncP = "100" ]; do
-              printf "\r"
-              syncP=$(lvm lvs --noheadings -o sync_percent -S lv_name="${_lvname}" | awk '{ printf "%d\n", $1 }')
-              printf " Waitng for ${_lvname} mirror syncing: ${syncP}%%"
-              sleep 1
-            done
-            printf "\ndone\n"
-          else
-            # Jezeli nie istnieje LV o podanej nazwie
-            printf "Creating logical volume ${_lvname}..."
-            # Jezeli wielkowsc okreslona procentowo
-            if [ $(expr index ${volume__size[$v]} %) != "0" ]; then
-              _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")     
+        case "${volume__raid[$v]}" in 
+          "raid1")
+            # Jezeli istnieje juz LV o podanej nazwie i nie znajduje sie na przetwarzanym PV
+            local nlv=$(lvm lvs --noheadings -o lv_name -S lv_name="$_lvname" | awk '{ print $1 }')
+            local devlv=$(lvm lvs --noheadings -o devices -S lv_name="$_lvname" | awk '{ print $1 }' | grep "${_disk}${volume__part[$v]}")
+            if [[ "x${nlv}" = "x${_lvname}" && "x${devlv}" = "x" ]]; then
+              # Liczba kopii mirror-a
+              local stripes=$(lvm lvs --noheadings -o stripes -S lv_name="$_lvname" | awk '{ print $1 }')
+              printf "Converting logical volume ${_lvname} to mirror...\n"
+              #_result=$(_run "lvm lvconvert -y -m${stripes} --type mirror --mirrorlog core -i 3 /dev/${volume__dev[$v]}")
+              _result=$(_run "lvm lvconvert -y -m${stripes} --alloc anywhere /dev/${volume__dev[$v]}")
+              _result=$(_run "lvm lvchange -ay /dev/${volume__dev[$v]}")
+              local syncP=0
+              until [ $syncP = "100" ]; do
+                printf "\r"
+                syncP=$(lvm lvs --noheadings -o sync_percent -S lv_name="${_lvname}" | awk '{ printf "%d\n", $1 }')
+                printf " Waitng for ${_lvname} mirror syncing: ${syncP}%%"
+                sleep 1
+              done
+              printf "\ndone\n"
             else
-              _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
+              # Jezeli nie istnieje LV o podanej nazwie
+              printf "Creating logical volume ${_lvname}..."
+              # Jezeli wielkowsc okreslona procentowo
+              if [ $(expr index ${volume__size[$v]} %) != "0" ]; then
+                _result=$(_run "lvm lvcreate -y -n ${_lvname} -l ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")     
+              else
+                _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
+              fi
+              if [ "$?" != 0 ]; then
+                break
+              fi
+              _makeFS="true"
+              printf "done\n"
             fi
+          ;;#raid=raid1
+
+          "n")
+            # Jezeli wolumen o podanej nazwie juz istnieje, nic nie rob
+            if [ "x$(lvm lvs --noheadings -o lv_name -S lv_name=${_lvname}| awk '{print $1}')" == "x${_lvname}" ]; then
+              continue
+            fi
+            printf "Creating logical volume ${_lvname}..."
+            _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
             if [ "$?" != 0 ]; then
               break
             fi
             _makeFS="true"
             printf "done\n"
-          fi
-        fi #raid=raid1
-
-        if [ "x${volume__raid[$v]}" == "xn" ]; then
-          # Jezeli wolumen o podanej nazwie juz istnieje, nic nie rob
-          if [ "x$(lvm lvs --noheadings -o lv_name -S lv_name=${_lvname}| awk '{print $1}')" == "x${_lvname}" ]; then
-            continue
-          fi
-          printf "Creating logical volume ${_lvname}..."
-          _result=$(_run "lvm lvcreate -y -n ${_lvname} -L ${volume__size[$v]} --wipesignatures y --zero y $_vgname ${_disk}${volume__part[$v]}")
-          if [ "$?" != 0 ]; then
-            break
-          fi
-          _makeFS="true"
-          printf "done\n"
-        else
-          _result="Error: Bad value for \"raid\" field for volume ${volume__dev[$v]}"
-          if [ "$?" != 0 ]; then
-            break
-          fi
-        fi #raid=n
+          ;; #raid=n
+          *)
+            _result="Error: Bad value for \"raid\" field for volume ${volume__dev[$v]}"
+            if [ "$?" != 0 ]; then
+              break
+            fi
+          ;;
+        esac
 
         if ${_makeFS}; then
           case ${volume__fstype[$v]} in
