@@ -82,23 +82,6 @@ RUN VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases
     && sudo curl -L "https://github.com/docker/compose/releases/download/$(echo $VERSION)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \ 
     && chmod +x /usr/local/bin/docker-compose
 
-# MFS
-RUN set -xe \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends gnupg2 ca-certificates wget \
-    && echo "deb http://ppa.moosefs.com/3.0.101/apt/ubuntu/bionic bionic main" > /etc/apt/sources.list.d/moosefs.list \
-    && wget -O - http://ppa.moosefs.com/moosefs.key | apt-key add - \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends moosefs-pro-client \
-    && apt-get -y autoremove \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /tmp/*
-
-# Grub timeout workaround ustawione na 3s
-RUN set -xe \
-    && echo "GRUB_RECORDFAIL_TIMEOUT=3" >> /etc/default/grub
-
 # Playbooki
 
 ADD ansible /ansible
@@ -106,7 +89,11 @@ ADD ansible /ansible
 RUN set -xe \
     && apt-get update \
     && apt-get install -y --no-install-recommends ansible \
+    && ansible-playbook /ansible/Playbooks/monitoring.yml --connection=local --extra-vars "var_host=127.0.0.1" \
     && ansible-playbook /ansible/Playbooks/install_tools.yml --connection=local --extra-vars "var_host=127.0.0.1" \
+    && ansible-playbook /ansible/Playbooks/grubTimeout.yml --connection=local --extra-vars "var_host=127.0.0.1" \
+    && ansible-playbook /ansible/Playbooks/MFSClient.yml --connection=local --extra-vars "var_host=127.0.0.1" \
+    && ansible-playbook /ansible/Playbooks/clean.yml --connection=local --extra-vars "var_host=127.0.0.1" \
     && apt-get purge -y ansible \
     && apt-get -y autoremove \
     && apt-get clean \

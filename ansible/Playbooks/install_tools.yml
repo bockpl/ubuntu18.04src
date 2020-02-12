@@ -3,10 +3,11 @@
 - name : "Instalacja podstawowych narzedzi"
   hosts: "{{ var_host }}"
   tasks:
-    - name: Narzedzia podsatowe
+    - name: Narzedzia podstawowe
       apt:
         name: "{{ item }}"
         state: present
+        update_cache: yes
       with_items:
         - sysstat
         - htop

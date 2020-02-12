@@ -4,8 +4,6 @@ export TEMPLATEFILE="template"
 
 export TEMPLATEPATH="${BOCMDIR}/${TEMPLATEFILE}"
 
-export ROOTSTANDARD=/tmp/rootstandard
-
 # Parse command line options for global options
 for x in $(cat /proc/cmdline); do
         case $x in
@@ -18,48 +16,5 @@ for x in $(cat /proc/cmdline); do
         esac
 done
 
-# Parse command line options for MFS options
-
-export MFSDIR=/media/mfs
-
-export DHCP_MFS_PID=/tmp/dhclient-mfs.pid
-
-for x in $(cat /proc/cmdline); do
-        case $x in
-        #mfsroot=*)
-        #        MFSROOT="${x#mfsroot=}"
-        #        MFSMASTER=`echo ${MFSROOT}|cut -d ":" -f 1`
-        #        MFSPATH=`echo ${MFSROOT}|cut -d ":" -f 2`
-        #        export MFSROOT MFSMASTER MFSPATH
-        #        ;;
-        mfsupper=*)
-                #sample: eth1:192.168.8.2:/obrazy/KOPL/template16.1.0
-                MFSUPPER="${x#mfsupper=}"
-                # sample result: eth1
-                export MFSINT=${MFSUPPER%%:*}
-
-                #if ! [ -e "/sys/class/net/$MFSINT" ]; then
-                #  MFSINT=""
-                #fi
-                #sample result: 192.168.8.2:/obrazy/KOPL/template16.1.0
-                export MFSUPPER=${MFSUPPER#*:}
-
-                #sample result: 192.168.8.2
-                export MFSMASTER=${MFSUPPER%%:*}
-
-                #sample result: 192.168.8.2:/obrazy/KOPL
-                export MFSPATH=${MFSUPPER%/*}
-
-                #sample: /obrazy/KOPL
-                export MFSPATH=${MFSPATH#*:}
-
-                #sample: template16.1.0
-                export OVUPPER=${MFSUPPER##*/}
-                ;;
-        mfsmanualnet*)
-                export MFSMANUALNET="true"
-                ;;
-        esac
-done
 
 export DEVICE NFSROOT;

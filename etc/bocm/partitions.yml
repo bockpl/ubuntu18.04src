@@ -1,26 +1,28 @@
-# A comment
+# Typ partycji to numer kodowy zgodny z typami partycji wyswietlanymi przez polecenie sgdisk -L
+# Obsługiwane typy systemów plików: 
+#   ef00 - EFI System
+#   8300 - Linux filesystem - domyslnie system plikow xfs
+#   8e00 - Linux LVM - brak bezposredniego systemu plikow
 
 partition:
   -
     number: 1
     name: EFI
     type: ef00
+    fstype: vfat
+    mnt: /boot/efi
+    mntopt: "noexec,uid=0,gid=4,dmask=0023,fmask=0133"
     size: 200M
   -
     number: 2
-    name: ZFS
-    type: 8300
+    name: ROOT
+    type: 8e00
+    fstype: ""
+    mnt: ""
+    mntopt: ""
     size: 0
 
 volume:
-  -
-    part: 1
-    name: EFI
-    dev: ""
-    fstype: vfat
-    size: 0
-    mnt: /boot/efi
-    raid: n
   -
     part: 2
     name: SWAP
@@ -28,6 +30,7 @@ volume:
     fstype: ""
     size: 1G
     mnt: ""
+    mntopt: ""
     raid: raid1
   -
     part: 2
@@ -36,12 +39,14 @@ volume:
     fstype: xfs
     size: 4G
     mnt: /
+    mntopt: ""
     raid: raid1
   - 
     part: 2
-    name: CHUNK
-    dev: mapper/vgroot-lvch
+    name: lvvar
+    dev: mapper/vgroot-lvvar
     fstype: xfs
-    size: 0
-    mnt: /mnt/lvchunk
+    size: 500M
+    mnt: /var
+    mntopt: ""
     raid: n

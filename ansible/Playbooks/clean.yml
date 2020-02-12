@@ -1,0 +1,8 @@
+---
+
+- name : "Czyszczenie apt cache"
+  hosts: "{{ var_host }}"
+  tasks:
+    - name: clean apt cache
+      command: apt-get clean
+      become: yes
