@@ -23,10 +23,5 @@ touch ../${TAG} \
 && chmod go+r ../vmlinuz \
 && docker cp ${TEMPLATE}_${TAG}:${INITRD} ../initrd.img \
 && docker stop ${TEMPLATE}_${TAG} \
-<<<<<<< HEAD
-&& echo "Eksportuje kontener do archiwum tgz..."; docker export ${TEMPLATE}_${TAG}|gzip > ../${TEMPLATE}.tgz \
-&& echo "Kasuje kontener..."; #docker rm ${TEMPLATE}_${TAG}
-=======
 && echo "Eksportuje kontener do archiwum tgz..."; docker export ${TEMPLATE}_${TAG}|gzip > ../${TEMPLATE}.tgz #\
 #&& echo "Kasuje kontener..."; docker rm ${TEMPLATE}_${TAG}
->>>>>>> develop
