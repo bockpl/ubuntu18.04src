@@ -1,11 +1,21 @@
 #!/bin/bash -e
-# SKRYPT PIERWSZEGO URUCHOMIENIA
+##### SKRYPT PIERWSZEGO URUCHOMIENIA
+# Maintainer: Konrad Stefański
 
-# Przenoszę skrypt do rc.local.afterinstall
+# Przenoszę skrypt do rc.local.afterinstall aby przy ponownym uruchomeniu nie został wykonany
 mv /etc/rc.local /etc/rc.local.afterinstall
-# NIE USUWAĆ I EDYTOWAĆ NICZEGO POWYŻEJ TEJ LINI
+
+####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO POWYŻEJ TEJ LINI
+
+# Jeżeli usunąłeś lvvar to zakomentuj poniższą linijkę
+touch /var/checkfile
 
 # TUTAJ WSTAW EWENTUALNIE WLASNĄ ZAWARTOŚĆ
 
-# NIE USUWAC I EDYTOWAĆ NICZEGO PONIŻEJ TEJ LINII
+####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO PONIŻEJ TEJ LINII
+
+# Restart usług
+systemctl restart rsyslog
+systemctl restart monit
+systemctl restart zabbix-agent
 exit 0
