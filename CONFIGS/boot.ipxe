@@ -1,0 +1,48 @@
+#!ipxe
+
+menu iPXE boot menu
+item --gap -- ---------------- Oparating systems ----------------
+item hdd	Boot from first local disk
+item ubuntu1804	boot ubuntu18.04:stable - branch master 
+item ubuntu1804dev	boot ubuntu18.04:latest - branch develop 
+item --gap -- ---------------- Advanced configuration ----------------
+item shell	Drop to iPXE shell
+item exit	Exit to BIOS boot
+choose --default ubuntu1804 --timeout 10000 target && goto ${target} || reboot
+
+:hdd
+# Boot the first local HDD
+sanboot --no-describe --drive 0x80
+
+:ubuntu1804
+set TEMPLATE ubuntu18.04
+goto ububoot
+
+:ubuntu1804dev
+set TEMPLATE ubuntu18.04dev
+goto ububoot
+
+:ububoot
+set base ${dhcp-server}/templates/${TEMPLATE}
+set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw --
+
+echo 'Loading kernel ...'
+kernel http://${base}/vmlinuz root=LABEL=lvroot ${KERNEL_PARAMS} ipxehttp=${base}  make_volumes
+#kernel /templates/${TEMPLATE}/vmlinuz root=LABEL=lvroot ${KERNEL_PARAMS} ipxehttp=${dhcp-server}/templates/${TEMPLATE} break=end make_volumes
+#kernel /templates/${TEMPLATE}/vmlinuz root=LABEL=lvroot ${KERNEL_PARAMS} ipxehttp=${dhcp-server}/templates/${TEMPLATE} make_volumes
+echo 'Loading initial ramdisk ...'
+initrd http://${base}/initrd.img
+#initrd /templates/${TEMPLATE}/initrd.img
+boot
+
+#prompt -k 0x197e -t 2000 Press F12 to install CentOS... || exit
+kernel ${base}/images/pxeboot/vmlinuz initrd=initrd.img repo=${base}
+initrd ${base}/images/pxeboot/initrd.img
+
+boot
+
+:shell
+shell
+
+:exit
+exit

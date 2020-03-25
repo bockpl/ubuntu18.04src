@@ -1,0 +1,11 @@
+#!/bin/bash -e
+# SKRYPT PIERWSZEGO URUCHOMIENIA
+
+# Przenoszę skrypt do rc.local.afterinstall
+mv /etc/rc.local /etc/rc.local.afterinstall
+# NIE USUWAĆ I EDYTOWAĆ NICZEGO POWYŻEJ TEJ LINI
+
+# TUTAJ WSTAW EWENTUALNIE WLASNĄ ZAWARTOŚĆ
+
+# NIE USUWAC I EDYTOWAĆ NICZEGO PONIŻEJ TEJ LINII
+exit 0

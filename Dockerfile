@@ -101,6 +101,20 @@ RUN set -xe \
     && rm -rf /ansible \
     && rm -rf /tmp/*
 
+# Dodanie konfiguracji postawowych usług
+ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
+ADD CONFIGS/etc/ssmtp /etc/ssmtp
+ADD CONFIGS/etc/netplan/ /etc/netplan
+ADD CONFIGS/etc/systemd/system/multi-user.target.wants/docker.service /etc/systemd/system/multi-user.target.wants/docker.service
+ADD CONFIGS/etc/docker/daemon.json /etc/docker/daemon.json
+ADD CONFIGS/etc/monit /etc/monit
+ADD CONFIGS/etc/zabbix /etc/zabbix
+ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
+
+
+
+
+
 # Dodanie wersji
 ADD VERSION /VERSION
 

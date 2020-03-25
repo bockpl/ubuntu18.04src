@@ -1,0 +1,62 @@
+#skanuj w odstepach 2 minutowych
+set daemon 60
+
+#pierwsze uruchomienie z 4 minutowych opoznieniem
+#with start delay 240
+
+#tworzenie dziennika pracy programu
+set logfile /var/log/monit.log
+
+#lista serwerow pocztowych do wysylania alarmow
+
+set mailserver 192.168.7.254
+
+#Lista alternatywnych serwerow do rozsylania alarmow
+#192.168.2.254
+#192.168.3.254
+#192.168.6.254
+#192.168.7.254
+#192.168.8.254
+#192.168.11.254
+#212.51.207.78
+#212.51.208.190
+#212.191.85.22
+#212.191.91.62 
+
+#zapisz zdarzenie w przypadku niedostepnosci serwera pocztowego
+set eventqueue
+    basedir /var/lib/monit  #katalog domyslny
+    slots 1000           #limit kolejki zdarzen
+
+#ustaw format wysylanego listu
+set mail-format { 
+   from: $HOST@p.lodz.pl
+   subject: $SERVICE $EVENT at $DATE on $HOST
+}              
+
+#odbiorcy alarmow
+set alert konrad.stefanski@p.lodz.pl { nonexist, resource, content }  
+
+#web-serwer
+set httpd port 2812 and     # akceptuj polaczenia z localhosta
+#use address localhost
+  allow localhost       # zezwol localhostowi na polaczenie z serwerem
+  allow 172.16.32.0/255.255.255.0 # zezwol na polaczenia z sieci
+  allow admin:monit     # zarzadaj podania uzytkownika 'admin' hasla 'monit'
+
+  SSL ENABLE
+  PEMFILE /etc/monit/monit.pem
+
+#localhost
+check system $HOST
+  if loadavg (1min) > 12 then alert  # liczba procesow oczekujacych w kolejce
+  if loadavg (5min) > 8 then alert  # liczba procesow oczekujacych w kolejce
+  if memory usage > 75% 10 times within 10 cycles then alert  # wykorzystanie pamieci w 75%
+  if memory usage > 90% 10 times within 10 cycles then exec /usr/local/sbin/process_dump_m  # wykorzystanie pamieci w 90% dolaczony raport z wykorzystania
+  if cpu usage (user) > 90% 10 times within 10 cycles then alert  # obciazenie procesora
+  if cpu usage (system) > 50% 10 times within 10 cycles then alert # obciazenie procesora
+  if cpu usage (wait) > 50% 10 times within 10 cycles then alert # obciazenie procesora
+
+#wlaczenie plikow z podkatalogu ( dla uslug lokalnych ) 
+include /etc/monit/conf.d/*
+include /etc/monit/conf-enabled/*
