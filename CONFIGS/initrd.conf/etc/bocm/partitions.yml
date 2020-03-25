@@ -25,28 +25,11 @@ partition:
 volume:
   -
     part: 2
-    name: SWAP
-    dev: mapper/vgroot-lvswap
-    fstype: ""
-    size: 1G
-    mnt: ""
-    mntopt: ""
-    raid: raid1
-  -
-    part: 2
     name: lvroot
     dev: mapper/vgroot-lvroot
     fstype: xfs
-    size: 5G
+    size: 7G
     mnt: /
     mntopt: ""
     raid: raid1
-  - 
-    part: 2
-    name: lvvar
-    dev: mapper/vgroot-lvvar
-    fstype: xfs
-    size: 500M
-    mnt: /var
-    mntopt: ""
-    raid: raid1
+

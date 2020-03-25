@@ -1,0 +1,15 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp-identifier: mac
+      dhcp4-overrides:
+        use-routes: true
+        use-dns: true
+#    eth1:
+#      dhcp4: true
+#      dhcp-identifier: mac
+#      dhcp4-overrides:
+#        use-dns: true

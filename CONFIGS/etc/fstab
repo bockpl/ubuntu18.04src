@@ -1,0 +1,5 @@
+# 
+LABEL=lvroot    /               xfs     defaults        0       0
+/dev/sda1       /boot/efi       vfat    noexec,uid=root,gid=adm,dmask=0022,fmask=0133   0       1
+#mfsmount /mnt/MFS fuse rw,nodev,nosuid,_netdev,mfsdelayedinit,mfsmaster=mfsmaster.dev.p.lodz.pl,mfssubfolder=/k8s 0 0
+
