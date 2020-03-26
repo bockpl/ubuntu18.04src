@@ -6,6 +6,6 @@ fi
 
 if [ -f ./VERSION ]
 then
+	./set_configs_permissions.sh
 	./makeTemplate $(cat ./VERSION)
 fi
-

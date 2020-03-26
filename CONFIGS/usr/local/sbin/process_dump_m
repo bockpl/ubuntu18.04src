@@ -1,0 +1,33 @@
+#!/bin/bash
+# script to send simple email
+# email subject
+SUBJECT="Alert on $HOSTNAME - Memory processes dump"
+# Email To
+
+EMAIL=$(awk -F "=" '/root\=/{ print $2}' /etc/ssmtp/ssmtp.conf)
+# Email text/message
+EMAILMESSAGE=$(mktemp)
+echo "Subject: $SUBJECT" >> $EMAILMESSAGE
+echo "Raport przeciążenia $HOSTNAME" >>$EMAILMESSAGE
+echo "" >> $EMAILMESSAGE
+echo "##################################################" >>$EMAILMESSAGE
+echo "Podstawowe informacje o systemie">> $EMAILMESSAGE
+echo "" >> $EMAILMESSAGE
+echo "Raport dla hosta: $HOSTNAME" >> $EMAILMESSAGE
+echo "System Uptime:" >> $EMAILMESSAGE
+uptime >> $EMAILMESSAGE
+echo "" >> $EMAILMESSAGE
+echo "System memory use (free -m):" >> $EMAILMESSAGE
+free -m  >> $EMAILMESSAGE
+echo "" >> $EMAILMESSAGE
+echo "##################################################" >>$EMAILMESSAGE
+echo "Szczegolowy wykaz wykorzystania pamieci" >>$EMAILMESSAGE
+echo "" >> $EMAILMESSAGE
+/usr/local/sbin/ps_mem.py >>$EMAILMESSAGE
+echo "" >> $EMAILMESSAGE
+echo "EOF" >> $EMAILMESSAGE
+# send an email using /bin/mail
+/usr/sbin/ssmtp "$EMAIL" < $EMAILMESSAGE
+# delete email body file:
+rm -rf $EMAILMESSAGE
+
