@@ -111,11 +111,8 @@ ADD CONFIGS/etc/docker/daemon.json /etc/docker/daemon.json
 ADD CONFIGS/etc/monit /etc/monit
 ADD CONFIGS/etc/zabbix /etc/zabbix
 ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
-
-
-
-
+ADD CONFIGS/usr/local/sbin/ps_mem.py /usr/local/sbin/ps_mem.py
+ADD CONFIGS/usr/local/sbin/process_dump_m /usr/local/sbin/process_dump_m
 
 # Dodanie wersji
 ADD VERSION /VERSION
-
