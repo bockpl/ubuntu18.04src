@@ -102,6 +102,7 @@ RUN set -xe \
     && rm -rf /tmp/*
 
 # Dodanie konfiguracji postawowych usług
+ADD CONFIGS/etc/fstab /etc/fstab
 ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
 ADD CONFIGS/etc/ssmtp /etc/ssmtp
 ADD CONFIGS/etc/netplan/ /etc/netplan

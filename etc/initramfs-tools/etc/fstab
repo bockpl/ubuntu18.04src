@@ -1,5 +1,0 @@
-# DEFAULT FSTAB TEMPLATE
-LABEL=lvroot	/		xfs	defaults	0	0
-LABEL=lvvar	/var		xfs	defaults	0	0
-/dev/sda1	/boot/efi	vfat	noexec,uid=root,gid=adm,dmask=0022,fmask=0133	0	1
-LABEL=swapdevices	none	sw	0	0
