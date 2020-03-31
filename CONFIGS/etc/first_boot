@@ -1,0 +1,19 @@
+#!/bin/bash
+# Skrypt pierwszego uruchomienia
+# To co się w nim znajduje za sekcją CONFIG zostanie jednorazowo uruchomione podczas startu systemu.
+
+#### CONFIG ####
+## Odkomentuj i Wpisz poprawne dane
+
+#ADMIN_EMAIL="jan.testowy@p.lodz.pl"
+#ADMIN_NAME="Jan Testowy"
+# Klucz publiczny administratora wgrywany do /root/.ssh/authorized_keys
+#PUB_KEY=""
+
+
+### KONIEC CONFIG ###
+
+### RUN ###
+
+# command1
+# command2

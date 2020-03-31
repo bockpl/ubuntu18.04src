@@ -5,6 +5,9 @@
 # Przenoszę skrypt do rc.local.afterinstall aby przy ponownym uruchomeniu nie został wykonany
 mv /etc/rc.local /etc/rc.local.afterinstall
 
+MONIT_CONF_FILE=/etc/monit/monitrc
+ZABBIX_CONF_FILE=/etc/zabbix/zabbix_agentd.conf
+SSMTP_CONF_FILE=/etc/ssmtp/ssmtp.conf
 ####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO POWYŻEJ TEJ LINI
 
 # Jeżeli usunąłeś lvvar to zakomentuj poniższą linijkę
@@ -12,10 +15,45 @@ touch /var/checkfile
 
 # TUTAJ WSTAW EWENTUALNIE WLASNĄ ZAWARTOŚĆ
 
+if [ -f /etc/first_boot ]
+then
+	. /etc/first_boot
+fi
+
 ####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO PONIŻEJ TEJ LINII
+
+MONITSERVER=$(cat monitrc | grep "#$(ip -4 addr show $(route | grep default | awk '{print$8}') | grep -oP '(?<=inet\s)\d+(\.\d+){2}')" | sed 's/#//')
+VMHSTNAME=$(hostname -f)
+
+if [! -v ADMIN_EMAIL ]
+	ADMIN_EMAIL="konrad.stefanski@p.lodz.pl"
+fi
+
+# Nadaję użytkonika dla root-a
+if [ -v ADMIN_NAME ]
+	chfn -f "$ADMIN_NAME" root
+fi
+
+# Zmieniam konfigurację monita, zabbixa oraz ssmtp
+sed -i "s/%MAILSERVER%/$MONITSERVER/g" $MONIT_CONF_FILE
+sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $MONIT_CONF_FILE
+sed -i "s/%SERVER%/$MONITSERVER/g" $ZABBIX_CONF_FILE
+sed -i "s/%MAILSERVER%/$MONITSERVER/g" $SSMTP_CONF_FILE
+sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $SSMTP_CONF_FILE
+sed -i "s/%HOSTNAME%/$VMHOSTNAME/g" $SSMTP_CONF_FILE
+
+# Wgranie klucza do root-a 
+if [ -v PUB_KEY ]
+	mkdir /root/.ssh
+	echo $PUB_KEY > /root/.ssh/authorized_keys
+	chmod 0600 /root/.ssh/authorized_keys
+fi
+
+
 
 # Restart usług
 systemctl restart rsyslog
 systemctl restart monit
 systemctl restart zabbix-agent
+
 exit 0
