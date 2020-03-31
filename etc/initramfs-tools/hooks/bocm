@@ -71,6 +71,7 @@ copy_file BOCM_functions /etc/bocm/functions.sh
 copy_file BOCM_fstab /etc/bocm/fstab
 copy_file BOCM_partitions.yml /etc/bocm/partitions.yml
 copy_file BOCM_bash_yaml /etc/bocm/bash-yaml/script/yaml.sh
+copy-file BOCM_rc.local /etc/bocm/rc.local
 
 # Na potrzeby klienta ssh
 copy_file SSH_PASSWD /etc/passwd /etc/passwd

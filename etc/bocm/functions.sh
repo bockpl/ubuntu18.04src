@@ -625,6 +625,15 @@ bocm_bottom() {
   cd /
   log_end_msg
 
+  # Umieszczenie pliku rc.local na pierwszy start maszyny
+  log_begin_msg "Put first boot rc.local"
+  printf "\n"
+  if [ -f ${rootmnt}/etc/rc.local ]; then
+    mv ${rootmnt}/etc/rc.local ${rootmnt}/etc/rc.local.user
+  fi
+  cp ${BOCMDIR}/rc.local ${rootmnt}/etc/rc.local
+  log_end_msg
+
   umountAll ${rootmnt} ${_PARTITIONS_FILE}
   mount -o remount,ro ${rootmnt} || panic "could not remount ro ${rootmnt}"
 }
