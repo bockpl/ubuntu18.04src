@@ -101,11 +101,6 @@ RUN set -xe \
     && rm -rf /ansible \
     && rm -rf /tmp/*
 
-# Naprawa resolv.conf
-RUN set -xe \
-    && rm -rf /etc/resolv.conf \
-    && ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
-
 # Dodanie konfiguracji postawowych usług
 ADD CONFIGS/etc/fstab /etc/fstab
 ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf

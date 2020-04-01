@@ -49,11 +49,14 @@ if [ -v PUB_KEY ]
 	chmod 0600 /root/.ssh/authorized_keys
 fi
 
-
-
 # Restart usług
 systemctl restart rsyslog
 systemctl restart monit
 systemctl restart zabbix-agent
+
+if [ -f /etc/rc.local.user ]
+then
+        cp /etc/rc.local.user /etc/rc.local
+fi
 
 exit 0
