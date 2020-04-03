@@ -12,3 +12,4 @@
         - zabbix-agent
         - monit
         - ssmtp
+        - mailutils
