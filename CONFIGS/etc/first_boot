@@ -9,7 +9,8 @@
 #ADMIN_NAME="Jan Testowy"
 # Klucz publiczny administratora wgrywany do /root/.ssh/authorized_keys
 #PUB_KEY=""
-
+# Adres mail kierownika
+#MANAGER_EMAIL="jan.testowy@p.lodz.pl"
 
 ### KONIEC CONFIG ###
 

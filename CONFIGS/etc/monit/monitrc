@@ -9,7 +9,7 @@ set logfile /var/log/monit.log
 
 #lista serwerow pocztowych do wysylania alarmow
 
-set mailserver 192.168.7.254
+set mailserver %MAILSERVER%
 
 #Lista alternatywnych serwerow do rozsylania alarmow
 #192.168.2.254
@@ -35,7 +35,7 @@ set mail-format {
 }              
 
 #odbiorcy alarmow
-set alert konrad.stefanski@p.lodz.pl { nonexist, resource, content }  
+set alert %ADMIN_EMAIL% { nonexist, resource, content }  
 
 #web-serwer
 set httpd port 2812 and     # akceptuj polaczenia z localhosta
