@@ -610,7 +610,7 @@ bocm_bottom() {
   mount -o bind /proc ${rootmnt}/proc
   mount -o bind /sys ${rootmnt}/sys
   change_kernelparams ${rootmnt}/etc/default/grub
-  chroot /root /bin/bash -c " \
+  chroot ${rootmnt} /bin/bash -c " \
       sed -i -e 's/use_lvmetad = 1/use_lvmetad = 0/g' /etc/lvm/lvm.conf; \
       update-grub; \
       grub-install --efi-directory=/boot/efi; \
@@ -632,6 +632,10 @@ bocm_bottom() {
     mv ${rootmnt}/etc/rc.local ${rootmnt}/etc/rc.local.user
   fi
   cp ${BOCMDIR}/rc.local ${rootmnt}/etc/rc.local
+  log_end_msg
+  # Umieszczenie pliku resolv.conf
+  log_begin_msg "Put file resolv.conf"
+  ln -sf /run/systemd/resolve/stub-resolv.conf ${rootmnt}/etc/resolv.conf
   log_end_msg
 
   umountAll ${rootmnt} ${_PARTITIONS_FILE}
