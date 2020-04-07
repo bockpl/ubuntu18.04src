@@ -2,16 +2,21 @@
 ##### SKRYPT PIERWSZEGO URUCHOMIENIA
 # Maintainer: Konrad Stefański
 
+
 # Przenoszę skrypt do rc.local.afterinstall aby przy ponownym uruchomeniu nie został wykonany
 mv /etc/rc.local /etc/rc.local.afterinstall
 
-MONIT_CONF_FILE=/etc/monit/monitrc
-ZABBIX_CONF_FILE=/etc/zabbix/zabbix_agentd.conf
-SSMTP_CONF_FILE=/etc/ssmtp/ssmtp.conf
-####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO POWYŻEJ TEJ LINI
+systemctl stop monit
+systemctl stop zabbix-agent
 
-# Jeżeli usunąłeś lvvar to zakomentuj poniższą linijkę
-touch /var/checkfile
+# Naprawa błędu w monicie i ssh
+mv /etc/monit/conf-available/guru_services.conf /etc/monit/conf.d/
+mv /etc/monit/conf-available/guru_log.conf /etc/monit/conf.d/
+
+MANAGER_EMAIL="seweryn.sitarski@p.lodz.pl"
+echo $HOSTNAME > /etc/hostname
+
+####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO POWYŻEJ TEJ LINI
 
 # TUTAJ WSTAW EWENTUALNIE WLASNĄ ZAWARTOŚĆ
 
@@ -22,41 +27,75 @@ fi
 
 ####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO PONIŻEJ TEJ LINII
 
-MONITSERVER=$(cat monitrc | grep "#$(ip -4 addr show $(route | grep default | awk '{print$8}') | grep -oP '(?<=inet\s)\d+(\.\d+){2}')" | sed 's/#//')
-VMHSTNAME=$(hostname -f)
+MONIT_CONF_FILE=/etc/monit/monitrc
+MONIT_CONF_FILE_MANAGER=/etc/monit/conf.d/guru_log.conf
+ZABBIX_CONF_FILE=/etc/zabbix/zabbix_agentd.conf
+SSMTP_CONF_FILE=/etc/ssmtp/ssmtp.conf
 
-if [! -v ADMIN_EMAIL ]
+MONITSERVER=$(cat $MONIT_CONF_FILE | grep "#$(ip -4 addr show $(route | grep default | awk '{print$8}') | grep -oP '(?<=inet\s)\d+(\.\d+){2}')" | sed 's/#//')
+VMHOSTNAME=$(hostname -f)
+if [ -f /etc/rc.local.user ]
+then
+        cp /etc/rc.local.user /etc/rc.local
+
+fi
+
+if [ ! -v ADMIN_EMAIL ]
+then
 	ADMIN_EMAIL="konrad.stefanski@p.lodz.pl"
 fi
 
-# Nadaję użytkonika dla root-a
+# Nadaję użytkonika dla root-a oraz konto imienne
 if [ -v ADMIN_NAME ]
+then
 	chfn -f "$ADMIN_NAME" root
-fi
+	DOMAIN=$(echo $ADMIN_EMAIL | cut -d @ -f2)
+	ACCOUNT=${ADMIN_EMAIL%@$DOMAIN}
+	ACCOUNT=${ACCOUNT//./_}
+	useradd -m $ACCOUNT -s /bin/bash
+	usermod -aG sudo $ACCOUNT
+	usermod -aG adm $ACCOUNT
+# Wgranie klucza do root-a 
+	if [ -v PUB_KEY ]
+	then
+		mkdir -p /root/.ssh
+		mkdir -p /home/$ACCOUNT/.ssh
+		echo $PUB_KEY > /root/.ssh/authorized_keys
+		echo $PUB_KEY > /home/$ACCOUNT/.ssh/authorized_keys
+		chmod 0600 /root/.ssh/authorized_keys
+		chmod 0600 /home/$ACCOUNT/.ssh/authorized_keys
+		chown $ACCOUNT:$ACCOUNT -R /home/$ACCOUNT
+	fi	
 
 # Zmieniam konfigurację monita, zabbixa oraz ssmtp
 sed -i "s/%MAILSERVER%/$MONITSERVER/g" $MONIT_CONF_FILE
 sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $MONIT_CONF_FILE
+sed -i "s/%MANAGER_EMAIL%/$MANAGER_EMAIL/g" $MONIT_CONF_FILE_MANAGER
+sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $MONIT_CONF_FILE_MANAGER
 sed -i "s/%SERVER%/$MONITSERVER/g" $ZABBIX_CONF_FILE
 sed -i "s/%MAILSERVER%/$MONITSERVER/g" $SSMTP_CONF_FILE
 sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $SSMTP_CONF_FILE
 sed -i "s/%HOSTNAME%/$VMHOSTNAME/g" $SSMTP_CONF_FILE
 
-# Wgranie klucza do root-a 
-if [ -v PUB_KEY ]
-	mkdir /root/.ssh
-	echo $PUB_KEY > /root/.ssh/authorized_keys
-	chmod 0600 /root/.ssh/authorized_keys
+
+cat <<EOF | mail -a "Content-type: text/plain; charset=UTF-8" -s "Nowa maszyna $HOSTNAME" $ADMIN_EMAIL
+Pomyślnie uruchomiono maszynę $HOSTNAME z obrazu w wersji $(cat /VERSION)
+
+Ty $ADMIN_NAME, jako administrator utworzonej maszyny, możesz zalogować się za pomocą dostarczonego klucza w pliku first_boot na konto root lub $ACCOUNT.
+Konto $ACCOUNT dodane jest do grupy sudo oraz adm.
+Przyznany adres IP maszyny to $(ip -4 addr show $(route | grep default | awk '{print$8}') | grep -oP '(?<=inet\s)\d+(\.\d+){3}').
+Podstawowe usługi na maszynie takie jak monit, zabbix, ssmtp zostały skonfigurowane tak aby powiadomienia przychodziły na adres $ADMIN_EMAIL.
+
+Powiadomienia logowania na konto root na konsolę, będą wysyłane na Twój adres $ADMIN_EMAIL oraz na adres kierownika $MANAGER_EMAIL.
+
+W celu zapenienia bezpieczeństwa $HOSTNAME, zaraz po zalogowaniu należy zmienić hasło użytkownika root oraz hasło użytkownika $ACCOUNT.
+Miłej pracy
+EOF
+
 fi
 
 # Restart usług
+systemctl start zabbix-agent
+systemctl start monit
 systemctl restart rsyslog
-systemctl restart monit
-systemctl restart zabbix-agent
-
-if [ -f /etc/rc.local.user ]
-then
-        cp /etc/rc.local.user /etc/rc.local
-fi
-
 exit 0
