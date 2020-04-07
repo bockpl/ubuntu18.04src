@@ -1,2 +1,0 @@
-# bocm
-BlueOcean control manager
