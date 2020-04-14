@@ -32,3 +32,5 @@
         - mc
         - net-tools
         - git-core
+        - fish
+
