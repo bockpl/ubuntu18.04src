@@ -114,5 +114,9 @@ ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
 ADD CONFIGS/usr/local/sbin/ps_mem.py /usr/local/sbin/ps_mem.py
 ADD CONFIGS/usr/local/sbin/process_dump_m /usr/local/sbin/process_dump_m
 
+# Konfiguracja lokalnego initramfs-a
+# Wylaczenie funkcji suspend systemu
+RUN printf "# Disable resume (this system has no swap)\nRESUME=none\n" > /etc/initramfs-tools/conf.d/resume
+
 # Dodanie wersji
 ADD VERSION /VERSION
