@@ -12,6 +12,9 @@
 # Adres mail kierownika
 #MANAGER_EMAIL="jan.testowy@p.lodz.pl"
 
+# Jezeli masz IP statyczne to wypełnij poniższe
+#OWN_HOSTNAME=
+
 ### KONIEC CONFIG ###
 
 ### RUN ###
