@@ -17,6 +17,9 @@ RUN set -xe \
 # Odminimalizowanie obrazu
 RUN yes | unminimize
 
+# Naprawa  invoke-rc.d: policy-rc.d denied execution of start.
+RUN printf "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d 
+
 RUN set -xe \
     && apt-get update \
     && apt-get install -y --no-install-recommends apt-utils linux-image-generic grub-efi \
