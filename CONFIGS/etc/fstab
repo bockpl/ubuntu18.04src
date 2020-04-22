@@ -2,4 +2,3 @@ LABEL=lvroot    /               xfs     defaults        0       0
 LABEL=lvvar	/var		xfs	defaults	0	0
 LABEL=lvswap	none		swap	sw		0	0
 /dev/sda1       /boot/efi       vfat    noexec,uid=root,gid=adm,dmask=0022,fmask=0133   0       1
-

@@ -9,9 +9,10 @@ fi
 
 # Sprawdzenie czy maszyna virtualna; Jeżei tak to instaluj tools-y
 VIRTUAL=$(hostnamectl | awk -v key='Chassis:' '$1==key {print $2}')
-if [ "$VIRTUAL" == "server" ];
+if [ ! "$VIRTUAL" == "server" ];
 then 
-	apt install -y open-vm-tools; 
+	apt-get -y -qq update
+	apt-get -y -qq install open-vm-tools; 
 fi
 
 # Przenoszę skrypt do rc.local.afterinstall aby przy ponownym uruchomeniu nie został wykonany
@@ -53,6 +54,11 @@ ZABBIX_CONF_FILE=/etc/zabbix/zabbix_agentd.conf
 SSMTP_CONF_FILE=/etc/ssmtp/ssmtp.conf
 
 MONITSERVER=$(cat $MONIT_CONF_FILE | grep "#$(ip -4 addr show $(route | grep default | awk '{print$8}') | grep -oP '(?<=inet\s)\d+(\.\d+){2}')" | sed 's/#//')
+if [ -v MONITSERVER ]
+then
+	MONITSERVER=192.168.2.254
+fi
+
 VMHOSTNAME=$(hostname -f)
 if [ -f /etc/rc.local.user ]
 then
@@ -94,11 +100,11 @@ sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $MONIT_CONF_FILE_MANAGER
 sed -i "s/%SERVER%/$MONITSERVER/g" $ZABBIX_CONF_FILE
 sed -i "s/%MAILSERVER%/$MONITSERVER/g" $SSMTP_CONF_FILE
 sed -i "s/%ADMIN_EMAIL%/$ADMIN_EMAIL/g" $SSMTP_CONF_FILE
-sed -i "s/%HOSTNAME%/$VMHOSTNAME/g" $SSMTP_CONF_FILE
+sed -i "s/%HOSTNAME%/$VMHOSTNAME.p.lodz.pl/g" $SSMTP_CONF_FILE
 
 
-cat <<EOF | mail -a "Content-type: text/plain; charset=UTF-8" -s "Nowa maszyna $HOSTNAME" $ADMIN_EMAIL
-Pomyślnie uruchomiono maszynę $HOSTNAME z obrazu w wersji $(cat /VERSION)
+cat <<EOF | mail -a "Content-type: text/plain; charset=UTF-8" -s "Nowa maszyna $VMHOSTNAME" $ADMIN_EMAIL
+Pomyślnie uruchomiono maszynę $VMHOSTNAME z obrazu w wersji $(cat /VERSION)
 
 Ty $ADMIN_NAME, jako administrator utworzonej maszyny, możesz zalogować się za pomocą dostarczonego klucza w pliku first_boot na konto root lub $ACCOUNT.
 Konto $ACCOUNT dodane jest do grupy sudo oraz adm.
@@ -107,7 +113,7 @@ Podstawowe usługi na maszynie takie jak monit, zabbix, ssmtp zostały skonfigur
 
 Powiadomienia logowania na konto root na konsolę, będą wysyłane na Twój adres $ADMIN_EMAIL oraz na adres kierownika $MANAGER_EMAIL.
 
-W celu zapenienia bezpieczeństwa $HOSTNAME, zaraz po zalogowaniu należy zmienić hasło użytkownika root oraz hasło użytkownika $ACCOUNT.
+W celu zapenienia bezpieczeństwa $VMHOSTNAME, zaraz po zalogowaniu należy zmienić hasło użytkownika root oraz hasło użytkownika $ACCOUNT.
 Miłej pracy
 EOF
 
