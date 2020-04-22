@@ -38,11 +38,14 @@ then
 	. /etc/first_boot
 fi
 
+# Nadanie hostname z pliku first_boot lub pobrane z dhcp
 if [ -v OWN_HOSTNAME ]
 then
 	VMHOSTNAME=$OWN_HOSTNAME
 else
 	VMHOSTNAME=$(hostname -f)
+	# Aby poprawnie monit się przedstawiał
+	hostnamectl set-hostame $VHOSTNAME
 fi
 
 
