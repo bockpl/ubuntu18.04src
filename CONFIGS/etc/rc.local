@@ -45,9 +45,8 @@ then
 else
 	VMHOSTNAME=$(hostname -f)
 	# Aby poprawnie monit się przedstawiał
-	hostnamectl set-hostname $VHOSTNAME
+	hostnamectl set-hostname $VMHOSTNAME
 fi
-
 
 ####### NIE USUWAĆ I NIE EDYTOWAĆ NICZEGO PONIŻEJ TEJ LINII
 
