@@ -8,20 +8,23 @@ ENV DEBIAN_FRONTEND noninteractive
 # Aktualizacja podstawowego obrazu oraz czyszczenie
 RUN set -xe \
     apt-get -y update \
-    && apt-get -y upgrade \
-    && apt-get -y autoremove \
-    && apt-get clean \
+    && apt-get -qy upgrade \
+    && apt-get -qy autoremove \
+    && apt-get -qy clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
 
 # Odminimalizowanie obrazu
 RUN yes | unminimize
 
+# Naprawa  invoke-rc.d: policy-rc.d denied execution of start.
+RUN printf "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d 
+
 RUN set -xe \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends apt-utils linux-image-generic grub-efi \
-    && apt-get autoremove -y \
-    && apt-get clean \
+    && apt-get -qy update \
+    && apt-get -qy -y --no-install-recommends install apt-utils linux-image-generic grub-efi \
+    && apt-get -qy autoremove \
+    && apt-get -qy clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
 
@@ -32,20 +35,20 @@ RUN sed -i -e 's/GRUB_CMDLINE_LINUX_DEFAULT=\".*\"/GRUB_CMDLINE_LINUX_DEFAULT=""
 
 # Dodanie obsługi lvm oraz xfs
 RUN set -xe \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends lvm2 xfsprogs \
-    && apt-get autoremove -y \
-    && apt-get clean \
+    && apt-get -qy update \
+    && apt-get -qy --no-install-recommends install lvm2 xfsprogs \
+    && apt-get -qy autoremove \
+    && apt-get -qy clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
 
 # Dodanie standardowych pakietów
 # policykit-1 - obsługa nadawania hostname z dhcp
 RUN set -xe \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends openssh-server vim gdisk ifenslave vlan coreutils policykit-1 \
-    && apt-get autoremove -y \
-    && apt-get clean \
+    && apt-get -qy update \
+    && apt-get -qy --no-install-recommends install openssh-server vim gdisk ifenslave vlan coreutils policykit-1 \
+    && apt-get -qy autoremove \
+    && apt-get -qy clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
 
@@ -60,9 +63,9 @@ RUN chmod 0600 /root/.ssh/authorized_keys
 
 # Docker engine
 RUN set -xe \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends docker.io \
-    && apt-get autoremove -y \
+    && apt-get -qy update \
+    && apt-get -qy --no-install-recommends install docker.io \
+    && apt-get -qy autoremove \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
@@ -71,9 +74,9 @@ RUN set -xe \
 # niezbędny jest curl
 RUN set -xe \
     && apt-get update \
-    && apt-get install -y --no-install-recommends curl jq \
-    && apt-get autoremove -y \
-    && apt-get clean \
+    && apt-get -qy --no-install-recommends install curl jq \
+    && apt-get -qy autoremove \
+    && apt-get -qy clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
 
@@ -101,6 +104,9 @@ RUN set -xe \
     && rm -rf /ansible \
     && rm -rf /tmp/*
 
+# Dodanie rc.local
+ADD CONFIGS/etc/rc.local /etc/rc.local
+
 # Dodanie konfiguracji postawowych usług
 ADD CONFIGS/etc/fstab /etc/fstab
 ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
@@ -113,6 +119,10 @@ ADD CONFIGS/etc/zabbix /etc/zabbix
 ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
 ADD CONFIGS/usr/local/sbin/ps_mem.py /usr/local/sbin/ps_mem.py
 ADD CONFIGS/usr/local/sbin/process_dump_m /usr/local/sbin/process_dump_m
+
+# Konfiguracja lokalnego initramfs-a
+# Wylaczenie funkcji suspend systemu
+RUN printf "# Disable resume (this system has no swap)\nRESUME=none\n" > /etc/initramfs-tools/conf.d/resume
 
 # Dodanie wersji
 ADD VERSION /VERSION

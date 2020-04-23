@@ -6,12 +6,21 @@
 
 partition:
   -
+  # Numer partycji
     number: 1
+  # Nazwa partycji
     name: EFI
+  # Typ partycji
     type: ef00
+  # Tym systemu plikow jakim ma byc sformatowana
     fstype: vfat
+  # Miejsce montowania, jezeli puste partycja 
+  # nie bedzie automatycznie montowana przed zgraniem obrazu i
+  # nie bedzie wpisana do pliku fstab
     mnt: /boot/efi
+  # Opcje monotowania
     mntopt: "noexec,uid=0,gid=4,dmask=0023,fmask=0133"
+  # Rozmiar: M,G,T
     size: 200M
   -
     number: 2
@@ -25,11 +34,47 @@ partition:
 volume:
   -
     part: 2
+    name: lvswap
+    dev: mapper/vgroot-lvswap
+    fstype: swap
+    size: 1G
+    mnt: ""
+    mntopt: ""
+    raid: raid1
+  # Wolumey typu SYS zawsze sa kasowane i nadpisywane
+    type: SYS
+  -
+    part: 2
     name: lvroot
     dev: mapper/vgroot-lvroot
     fstype: xfs
-    size: 7G
+    size: 5G
     mnt: /
     mntopt: ""
     raid: raid1
-
+    type: SYS
+  - 
+    part: 2
+    name: lvvar
+    dev: mapper/vgroot-lvvar
+    fstype: xfs
+    size: 500M
+    mnt: /var
+    mntopt: ""
+    raid: raid1
+    type: SYS
+  #  - 
+  #  part: 2
+  #  name: lvmfs
+  ## Nazwa urzadzenia lvm bez /dev
+  ## jesli wielkosc ostatniego wolumenu jest 0 
+  ## do nazwy zostanie automatycznie dodany numer kanalu SCSI
+  #  dev: mapper/vgroot-lvmfs
+  #  fstype: xfs
+  #  size: 0
+  #  mnt: ""
+  #  mntopt: ""
+  #  raid: raid1
+  ## Wolumenty typu USR nie sa kasowane i nadpisywane 
+  ## chyba ze zostanie dodana opcja make_volumes do kernela
+  #  type: USR

@@ -33,3 +33,4 @@
         - net-tools
         - git-core
         - mailutils
+        - fish
