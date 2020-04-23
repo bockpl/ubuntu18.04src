@@ -18,9 +18,9 @@ partition:
   # nie bedzie automatycznie montowana przed zgraniem obrazu i
   # nie bedzie wpisana do pliku fstab
     mnt: /boot/efi
-  # Opcje moentowania
+  # Opcje monotowania
     mntopt: "noexec,uid=0,gid=4,dmask=0023,fmask=0133"
-  # Rozmiar
+  # Rozmiar: M,G,T
     size: 200M
   -
     number: 2
@@ -34,7 +34,7 @@ partition:
 volume:
   -
     part: 2
-    name: SWAP
+    name: lvswap
     dev: mapper/vgroot-lvswap
     fstype: swap
     size: 1G
@@ -48,12 +48,12 @@ volume:
     name: lvroot
     dev: mapper/vgroot-lvroot
     fstype: xfs
-    size: 6G
+    size: 5G
     mnt: /
     mntopt: ""
     raid: raid1
     type: SYS
-  -
+  - 
     part: 2
     name: lvvar
     dev: mapper/vgroot-lvvar
@@ -63,18 +63,18 @@ volume:
     mntopt: ""
     raid: raid1
     type: SYS
-#  - 
-#    part: 2
-#    name: lvmfs
-#  # Nazwa urzadzenia lvm bez /dev
-#  # jesli wielkosc ostatniego wolumenu jest 0 
-#  # do nazwy zostanie automatycznie dodany numer kanalu SCSI
-#    dev: mapper/vgroot-lvmfs
-#    fstype: xfs
-#    size: 0
-#    mnt: ""
-#    mntopt: ""
-#    raid: raid1
-#  # Wolumenty typu USR nie sa kasowane i nadpisywane 
-#  # chyba ze zostanie dodana opcja make_volumes do kernela
-#    type: USR
+  #  - 
+  #  part: 2
+  #  name: lvmfs
+  ## Nazwa urzadzenia lvm bez /dev
+  ## jesli wielkosc ostatniego wolumenu jest 0 
+  ## do nazwy zostanie automatycznie dodany numer kanalu SCSI
+  #  dev: mapper/vgroot-lvmfs
+  #  fstype: xfs
+  #  size: 0
+  #  mnt: ""
+  #  mntopt: ""
+  #  raid: raid1
+  ## Wolumenty typu USR nie sa kasowane i nadpisywane 
+  ## chyba ze zostanie dodana opcja make_volumes do kernela
+  #  type: USR
