@@ -135,6 +135,7 @@ RUN set -xe \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/*
 ENV TZ="Europe/Warsaw"
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && dpkg-reconfigure -f noninteractive tzdata
 
 # Konfiguracja lokalnego initramfs-a
 # Wylaczenie funkcji suspend systemu
