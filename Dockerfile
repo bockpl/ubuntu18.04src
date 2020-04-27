@@ -90,7 +90,7 @@ RUN VERSION=$(curl --silent https://api.github.com/repos/docker/compose/releases
 ADD ansible /ansible
 
 RUN set -xe \
-    && apt-get update \
+    && apt-get -yq update \
     && apt-get install -y --no-install-recommends ansible \
     && ansible-playbook /ansible/Playbooks/monitoring.yml --connection=local --extra-vars "var_host=127.0.0.1" \
     && ansible-playbook /ansible/Playbooks/install_tools.yml --connection=local --extra-vars "var_host=127.0.0.1" \
@@ -119,6 +119,22 @@ ADD CONFIGS/etc/zabbix /etc/zabbix
 ADD CONFIGS/etc/dhcp/dhclient.conf /etc/dhcp/dhclient.conf
 ADD CONFIGS/usr/local/sbin/ps_mem.py /usr/local/sbin/ps_mem.py
 ADD CONFIGS/usr/local/sbin/process_dump_m /usr/local/sbin/process_dump_m
+ADD CONFIGS/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
+
+# Naprawa uprawnień dla monit-a
+RUN chmod 600 /etc/monit/monitrc
+RUN chmod 600 /etc/monit/monit.pem
+RUN chmod 600 /etc/monit/monitrc_distribution
+
+# Konfiguraja strefy czasowej
+RUN set -xe \
+    && apt-get -yq update \
+    && apt-get -yq install tzdata \
+    && apt-get -yq autoremove \
+    && apt-get -q clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
+ENV TZ="Europe/Warsaw"
 
 # Konfiguracja lokalnego initramfs-a
 # Wylaczenie funkcji suspend systemu
