@@ -9,7 +9,7 @@
         state: present
     - name: Add MFS repository
       apt_repository:
-         repo: 'deb http://ppa.moosefs.com/3.0.101/apt/ubuntu/bionic bionic main'
+         repo: 'deb http://ppa.moosefs.com/3.0.112/apt/ubuntu/bionic bionic main'
          state: present
          filename: mfc_client
          update_cache: yes
