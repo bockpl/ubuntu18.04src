@@ -39,7 +39,7 @@ then
 fi
 
 # Nadanie hostname z pliku first_boot lub pobrane z dhcp
-if [ -v OWN_HOSTNAME ]
+if [ -n $OWN_HOSTNAME ]
 then
 	VMHOSTNAME=$OWN_HOSTNAME
 else
@@ -56,7 +56,7 @@ ZABBIX_CONF_FILE=/etc/zabbix/zabbix_agentd.conf
 SSMTP_CONF_FILE=/etc/ssmtp/ssmtp.conf
 
 MONITSERVER=$(cat $MONIT_CONF_FILE | grep "#$(ip -4 addr show $(route | grep default | awk '{print$8}') | grep -oP '(?<=inet\s)\d+(\.\d+){2}')" | sed 's/#//')
-if [ -v MONITSERVER ]
+if [ -z "$MONITSERVER" ]
 then
 	MONITSERVER=192.168.2.254
 fi
@@ -67,13 +67,13 @@ then
         cp /etc/rc.local.user /etc/rc.local
 fi
 
-if [ ! -v ADMIN_EMAIL ]
+if [ -z "$ADMIN_EMAIL" ]
 then
 	ADMIN_EMAIL="konrad.stefanski@p.lodz.pl"
 fi
 
 # Nadaję użytkonika dla root-a oraz konto imienne
-if [ -v ADMIN_NAME ]
+if [ -n "$ADMIN_NAME" ]
 then
 	chfn -f "$ADMIN_NAME" root
 	DOMAIN=$(echo $ADMIN_EMAIL | cut -d @ -f2)
@@ -83,7 +83,7 @@ then
 	usermod -aG sudo $ACCOUNT
 	usermod -aG adm $ACCOUNT
 # Wgranie klucza do root-a 
-	if [ -v PUB_KEY ]
+	if [ -n "$PUB_KEY" ]
 	then
 		mkdir -p /root/.ssh
 		mkdir -p /home/$ACCOUNT/.ssh

@@ -5,19 +5,31 @@
 #### CONFIG ####
 ## Odkomentuj i Wpisz poprawne dane
 
+# Dane Administratora
+
+# Adres email
 #ADMIN_EMAIL="jan.testowy@p.lodz.pl"
+
+# Imię i nazwisko
 #ADMIN_NAME="Jan Testowy"
+
 # Klucz publiczny administratora wgrywany do /root/.ssh/authorized_keys
 #PUB_KEY=""
-# Adres mail kierownika
+
+# Adres mail kierownika - jeżeli nie wpisany - domyślnie seweryn.sitarski@p.lodz.pl
 #MANAGER_EMAIL="jan.testowy@p.lodz.pl"
 
-# Jezeli masz IP statyczne to wypełnij poniższe
+# Własna nazwa hostname - przy pobieraniu adresu z dhcp nie wypełniaj tego pola
 #OWN_HOSTNAME=
 
 ### KONIEC CONFIG ###
 
 ### RUN ###
 
-# command1
-# command2
+# W tej sekcj możesz podać własne polecenia któ©e wykonają się podcas pierwszego uruchomienia
+# np:
+# apt install -y ansible
+# apt purge -y mc
+# echo "jakiś tekst" > PATH/DO/JAKIS/PLIK
+# 
+# 
