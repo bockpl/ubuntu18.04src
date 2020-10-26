@@ -61,7 +61,8 @@ Utwórz plik `default` z zawartością
     #Manual disk menagement
     export MANUAL_DISK_MANAGE="no"
 
-    export SGDISK=/sbin/sgdisk`
+    export SGDISK=/sbin/sgdisk
+
 
 Podmień `/dev/sda` na właściwe urządzenie blokowe
 
