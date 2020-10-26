@@ -47,7 +47,7 @@ Po dodaniu lub usunięciu lv należy uwzględnić tę zmianę w pliku `fstab`. J
 Musisz zmienić oznaczenie dysku w systemie. 
 
 Miejsce docelowe pliku jest w tym amym katalogu co plik partitions.yml
-Utwórz plik defaults z zawartością
+Utwórz plik `default` z zawartością
 
     #Root disk device:
     export DISKDEV="/dev/sda"
