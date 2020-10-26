@@ -44,8 +44,11 @@ Po dodaniu lub usunięciu lv należy uwzględnić tę zmianę w pliku `fstab`. J
 
 ## W maszynie jest dysk typu NVME
 
-Musisz zmienić oznaczenie dysku w systemie. Miejsce docelowe pliku jest w tym amym katalogu co plik partitions.yml
+Musisz zmienić oznaczenie dysku w systemie. 
+
+Miejsce docelowe pliku jest w tym amym katalogu co plik partitions.yml
 Utwórz plik defaults z zawartością
+
     #Root disk device:
     export DISKDEV="/dev/sda"
 
