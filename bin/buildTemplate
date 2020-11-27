@@ -1,0 +1,54 @@
+#!/bin/bash
+
+#if [ "x$1" != 'x' ]; then TAG=$1; fi
+#
+#if [ "x${TAG}" = 'x' ]; then TAG=latest; fi
+
+# Naprawa uprawnień
+bin/set_configs_permissions.sh
+
+BRANCH=$(git branch | grep '*' | awk '{print $2}')
+BUILD=$(bin/build.sh version)
+VERSION=$(bin/version.sh version)
+TEMPLATE=$(basename $(dirname $(pwd)))
+
+if [ $BRANCH = 'develop' ];
+then
+	VERSION=$VERSION-$BRANCH
+fi
+
+read -p "Czy budowac obraz ${TEMPLATE}_${VERSION}? (t/n): " ANS
+if [ ${ANS} != 't' ] && [ ${ANS} != 'T' ]; then
+  exit 0
+fi
+
+echo "BUILD: $BUILD"
+echo "VERSION: $VERSION"
+
+echo "Przygotowuję pliki konfiguracyjne...."
+bin/prepareConfigFiles.sh
+
+echo "Buduję template ...."
+
+docker build -t ${TEMPLATE}:${VERSION} ./ \
+&& bin/build.sh increment \
+&& docker run --name ${TEMPLATE}_${VERSION} ${TEMPLATE}:${VERSION} /bin/sleep 3 \
+&& docker stop ${TEMPLATE}_${VERSION}
+
+echo "Eksportuje kontener do archiwum tgz..."; docker export ${TEMPLATE}_${VERSION}|gzip > ../${TEMPLATE}_${VERSION}.tgz #
+echo "Template w ../${TEMPLATE}_${VERSION}.tgz"
+docker rm ${TEMPLATE}_${VERSION}
+
+read -p "Czy wysłać obraz ${TEMPLATE}_${VERSION} na MFS? (t/n): " ANS
+if [ ${ANS} = 't' ] || [ ${ANS} = 'T' ]; then
+	echo "Wysyłam obraz"
+	ssh root@192.168.8.144 "mkdir /srv/TEMPLATES/${TEMPLATE}-${VERSION}" \
+		&& ssh root@192.168.8.144 "cp /srv/TEMPLATES/ubuntu18.04dev/initrd.img /srv/TEMPLATES/${TEMPLATE}-${VERSION}/initrd.img" \
+		&& ssh root@192.168.8.144 "cp /srv/TEMPLATES/ubuntu18.04dev/vmlinuz /srv/TEMPLATES/${TEMPLATE}-${VERSION}/vmlinuz" \
+		&& scp ../${TEMPLATE}_${VERSION}.tgz root@192.168.8.144:/srv/TEMPLATES/${TEMPLATE}-${VERSION}/${TEMPLATE}_${VERSION} \
+		&& echo "Obraz wrzucony na zdalny serwer" || echo "Błąd"
+fi
+
+
+
+exit 0

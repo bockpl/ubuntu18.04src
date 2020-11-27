@@ -2,12 +2,12 @@
 
 TL;DR;
 
-Katalog HOST_TEMPLATE zawiera wszystkie niezbędne pliki aby uruchomić host z sieci (iPXE).
+Pliki konfiguracyjne pobieramy z tego repozytorium z katalogu CONFIGS. To w nim znajdują się pliki, które należy przegrać do katalogu hosta. 
 
 ## WYMAGANIA WSTĘPNE
 
 - administrator uruchamianej maszyny musi mieć dostęp do katalogów konfiguracyjnych znajdujacych się na MFS
-    Logowanie `ssh root@192.168.8.144`
+    Logowanie `ssh root@192.168.8.144` lub podmontowanie udziału MFS lokalnie
     Katalogi z konfiguracjami `cd /srv/TEMPLATES/CONFIGS`
 - uruchamiana maszyna (fizyczna lub wirtualna) musi mieć ustawione bootowanie z efi (nie BIOS)
     Ustawi to administrator maszyn fizycznych lub administartor usługi DMW dla wirtualek.
@@ -17,20 +17,27 @@ Katalog HOST_TEMPLATE zawiera wszystkie niezbędne pliki aby uruchomić host z 
     Szczegóły w pliku `/etc/first_boot`
 - upewnić się że maszyna będzie miała dostęp do zabixx serwera
 
+
 ## PRZYGOTOWANIE KATALOGU KONFIGURACYJNEGO
 
 Zaloguj się na maszynę z konfiguiracjami 
-`ssh root@192.168.8.144`
-Skopiuj katalog HOST_TEMPLATE
-`cd /srv/TEMPLATES/CONFIGS`
-`cp -a HOST_TEMPLATE MOJHOSTNAME`
+`ssh root@192.168.8.144` lub podmontuj udział MFS lokalnie.
+Skopiuj katalog CONFIG z repozytorium (tego repozytorium) na zdalny udział
+
+`cp -a CONFIGS MOJHOSTNAME`
+
+MOJHOSTNAME - to katalog na maszynie 192.168.8.144:/srv/TEMPLATES/CONFIGS/MOJHOSTNAME
+
 gdzie MOJHOSTNAME to nazwa katalogu która jest zbierzna z hostname uzyskanym od administratora serwera DHCP/iPXE
+
 Dokonaj konfiguracji w pliku `first_boot` zgodnie z informacjami tam zawartymi
 `vi MOJHOSTNAME/etc/first_boot`
 
 ## URUCHONMIENIE MASZYNY
 
 Z menu boot uefi wybrać "UEFI Netowrk BOOT" lub podobnie
+
+Przy pierwszym uruchonieniu należy wybrać pozycję DiskInfo aby uzyskać informację nt. dysków zainstalowanych w systemie. Z listy należy przepisać wybrany dysk (pierwsza kolumna - PATH) i wpisać do pliku default w polu `export DISKDEV=`. Plik default znajduje się w MOJHOSTNAME/initrd.conf/etc/bocm/default
 
 Po poprawnym uruchomieniu otrzymasz mail z informacjami.
 
@@ -42,32 +49,6 @@ Plik znajduje się w `MOJHOSTNAME/initrd.conf/etc/bocm/partitions.yaml`
 
 Po dodaniu lub usunięciu lv należy uwzględnić tę zmianę w pliku `fstab`. Jego położenie to `MOJHOSTNAME/etc/fstab`
 
-## W maszynie jest dysk typu NVME
-
-Musisz zmienić oznaczenie dysku w systemie. 
-
-Miejsce docelowe pliku jest w tym amym katalogu co plik partitions.yml
-Utwórz plik `default` z zawartością
-
-    #Root disk device:
-    export DISKDEV="/dev/sda"
-
-    #Root volume group
-    export VG_NAME=vgroot
-
-    #File with default volumes
-    export VOLUMES_FILE=${BOCMDIR}/partitions.yml
-
-    #Manual disk menagement
-    export MANUAL_DISK_MANAGE="no"
-
-    export SGDISK=/sbin/sgdisk
-
-
-Podmień `/dev/sda` na właściwe urządzenie blokowe
-
-
-
 ## KONFIGURACJA SIECI
 
 Domyślna konfiguracja jest dla jednego iface pobierającego IP z dhcp.
@@ -78,6 +59,7 @@ Konfiguracji dokonujemy w pliku `MOJHOSTNAME/etc/netplan/config.yaml`
 
 Zamiast kopiować cały katalog `HOST_TEMPLATE` musisz skopiować tylko:
 boot.ipxe
+initrd.conf/etc/bocm/default
 etc/resolv.conf (link)
 etc/dhcp (katalog z zawartością)
 etc/docker (katalog z zawartością)

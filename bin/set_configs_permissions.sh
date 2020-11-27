@@ -10,4 +10,3 @@ chmod 0700 $CONFIG/etc/monit/monit.pem
 chmod 0600 $CONFIG/etc/monit/monitrc
 chmod 0600 $CONFIG/etc/monit/monitrc_distribution
 
-

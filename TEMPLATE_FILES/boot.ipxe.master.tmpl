@@ -1,0 +1,49 @@
+#!ipxe
+
+menu iPXE boot menu
+item --gap -- ---------------- Oparating systems ----------------
+item hdd	Boot from next devices
+item ubuntu1804_mv	boot ubuntu18.04:%%VERSION%% - branch master make_volumes
+item ubuntu1804		boot ubuntu18.04:%%VERSION%% - branch master
+item --gap -- ---------------- Advanced configuration ----------------
+item shell	Drop to iPXE shell
+item exit	Exit to BIOS boot
+choose --default ubuntu1804dev_mv --timeout 10000 target && goto ${target} || reboot
+
+:hdd
+# Boot the first local HDD
+#sanboot --no-describe --drive 0x80
+# Boot fron next devices
+exit
+
+:ubuntu1804_mv
+set TEMPLATE ubuntu18.04-%%VERSION%%
+set base ${dhcp-server}/templates/${TEMPLATE}
+set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base} make_volumes
+goto ububoot
+
+:ubuntu1804
+set TEMPLATE ubuntu18.04-%%VERSION%%
+set base ${dhcp-server}/templates/${TEMPLATE}
+set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base} 
+goto ububoot
+
+:ububoot
+echo 'Loading kernel ...'
+kernel http://${base}/vmlinuz root=LABEL=lvroot ${KERNEL_PARAMS}
+echo 'Loading initial ramdisk ...'
+initrd http://${base}/initrd.img
+boot
+
+#prompt -k 0x197e -t 2000 Press F12 to install CentOS... || exit
+kernel ${base}/images/pxeboot/vmlinuz initrd=initrd.img repo=${base}
+initrd ${base}/images/pxeboot/initrd.img
+
+boot
+
+:shell
+shell
+
+:exit
+exit
+
