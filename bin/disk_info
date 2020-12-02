@@ -13,10 +13,17 @@ short_names=$(lsblk --nodeps -no name | grep -vE "sr[0-9]|loop")
 
 for short_name in ${short_names};
 do
-        path=$(udevadm info -q symlink /dev/$short_name | sed -E 's/(.*)(disk\/by-path\/.*)(.*)/\2/g')
-        size=$(lsblk -d -n -o SIZE /dev/$short_name)
-        disk_model=$(udevadm info /dev/$short_name | awk -F '=' '/E: ID_MODEL=/ {print $2}')
-        echo -e "/dev/$path\t/dev/$short_name\t$size\t$disk_model"
+	for path in $(udevadm info -q symlink /dev/$short_name);
+	do
+		if echo $path|grep -q "by-path";
+		then
+
+        		#path=$(udevadm info -q symlink /dev/$short_name | sed -E 's/(.*)(disk\/by-path\/.*)(.*)/\2/g')
+        		size=$(lsblk -d -n -o SIZE /dev/$short_name)
+        		disk_model=$(udevadm info /dev/$short_name | awk -F '=' '/E: ID_MODEL=/ {print $2}')
+        		echo -e "/dev/$path\t/dev/$short_name\t$size\t$disk_model"
+		fi
+	done
 done
 
 exit 0
