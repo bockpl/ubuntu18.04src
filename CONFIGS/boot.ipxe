@@ -4,11 +4,6 @@ menu iPXE boot menu
 item --gap -- ---------------- Oparating systems ----------------
 item ubuntu1804	boot ubuntu18.04:1.11.0	- branch master
 
-item ubuntu1804dev_mv	boot ubuntu18.04:1.10.0-develop - branch develop make_volumes
-item ubuntu1804dev_mv_be	boot ubuntu18.04:1.10.0-develop - branch develop make_volumes break=end
-item ubuntu1804dev 	boot ubuntu18.04:1.10.0-develop - branch develop 
-item ubuntu1804dev_be 	boot ubuntu18.04:1.10.0-develop - branch develop break=end
-
 item --gap -- ---------------- Advanced configuration ----------------
 item shell	Drop to iPXE shell
 item exit	Exit to BIOS boot
