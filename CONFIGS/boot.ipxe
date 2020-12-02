@@ -12,7 +12,7 @@ item ubuntu1804dev_be 	boot ubuntu18.04:1.10.0-develop - branch develop break=en
 item --gap -- ---------------- Advanced configuration ----------------
 item shell	Drop to iPXE shell
 item exit	Exit to BIOS boot
-choose --default ubuntu1804dev_mv --timeout 10000 target && goto ${target} || reboot
+choose --default ubuntu1804dev --timeout 10000 target && goto ${target} || reboot
 
 :hdd
 # Boot the first local HDD
