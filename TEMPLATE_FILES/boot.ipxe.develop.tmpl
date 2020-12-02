@@ -2,45 +2,50 @@
 
 menu iPXE boot menu
 item --gap -- ---------------- Oparating systems ----------------
-item ubuntu1804	boot ubuntu18.04:1.11.0	- branch master
-
-item ubuntu1804dev_mv	boot ubuntu18.04:1.10.0-develop - branch develop make_volumes
-item ubuntu1804dev_mv_be	boot ubuntu18.04:1.10.0-develop - branch develop make_volumes break=end
-item ubuntu1804dev 	boot ubuntu18.04:1.10.0-develop - branch develop 
-item ubuntu1804dev_be 	boot ubuntu18.04:1.10.0-develop - branch develop break=end
+item hdd	Boot from next devices
+item diskinfo		boot DiskInfo
+item ubuntu1804dev_mv	boot ubuntu18.04:%%VERSION%% - branch develop make_volumes
+item ubuntu1804dev_mv_be	boot ubuntu18.04:%%VERSION%% - branch develop make_volumes break=end
+item ubuntu1804dev 	boot ubuntu18.04:%%VERSION%% - branch develop 
+item ubuntu1804dev_be 	boot ubuntu18.04:%%VERSION%% - branch develop break=end
 
 item --gap -- ---------------- Advanced configuration ----------------
 item shell	Drop to iPXE shell
 item exit	Exit to BIOS boot
-choose --default ubuntu1804 --timeout 10000 target && goto ${target} || reboot
+choose --default ubuntu1804dev_mv --timeout 10000 target && goto ${target} || reboot
 
+:hdd
+# Boot the first local HDD
+#sanboot --no-describe --drive 0x80
+# Boot fron next devices
+exit
 
-:ubuntu1804
-set TEMPLATE ubuntu18.04-1.11.0
+:diskinfo
+set TEMPLATE ubuntu18.04-%%VERSION%%
 set base ${dhcp-server}/templates/${TEMPLATE}
-set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base}
+set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base} break_end disk_info  
 goto ububoot
 
 :ubuntu1804dev_mv
-set TEMPLATE ubuntu18.04-1.10.0-develop
+set TEMPLATE ubuntu18.04-%%VERSION%%
 set base ${dhcp-server}/templates/${TEMPLATE}
 set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base} make_volumes
 goto ububoot
 
 :ubuntu1804dev_mv_be
-set TEMPLATE ubuntu18.04-1.10.0-develop
+set TEMPLATE ubuntu18.04-%%VERSION%%
 set base ${dhcp-server}/templates/${TEMPLATE}
 set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base} break=end make_volumes
 goto ububoot
 
 :ubuntu1804dev
-set TEMPLATE ubuntu18.04-1.10.0-develop
+set TEMPLATE ubuntu18.04-%%VERSION%%
 set base ${dhcp-server}/templates/${TEMPLATE}
 set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base}
 goto ububoot
 
 :ubuntu1804dev_be
-set TEMPLATE ubuntu18.04-1.10.0-develop
+set TEMPLATE ubuntu18.04-%%VERSION%%
 set base ${dhcp-server}/templates/${TEMPLATE}
 set KERNEL_PARAMS loglevel=3 initrd=initrd.img net.ifnames=0 biosdevname=0 ipv6.disable=1 ip=dhcp rw -- ipxehttp=${base} break=end
 goto ububoot

@@ -1,6 +1,6 @@
 From ubuntu:18.04
 #Maintainer is deprecated 
-LABEL authors="konrad.stefanski@p.lodz.pl,seweryn.sitarski@p.lodz.pl"
+LABEL authors="konrad.stefanski@p.lodz.pl"
 
 # W celu eliminacji bledu "debconf: unable to initialize frontend: Dialog"
 ENV DEBIAN_FRONTEND noninteractive
@@ -22,7 +22,7 @@ RUN printf "#!/bin/sh\nexit 0" > /usr/sbin/policy-rc.d
 
 RUN set -xe \
     && apt-get -qy update \
-    && apt-get -qy -y --no-install-recommends install apt-utils linux-image-generic grub-efi \
+    && apt-get -qy -y --no-install-recommends install apt-utils linux-image-generic grub-efi  \
     && apt-get -qy autoremove \
     && apt-get -qy clean \
     && rm -rf /var/lib/apt/lists/* \
@@ -121,6 +121,9 @@ ADD CONFIGS/usr/local/sbin/ps_mem.py /usr/local/sbin/ps_mem.py
 ADD CONFIGS/usr/local/sbin/process_dump_m /usr/local/sbin/process_dump_m
 ADD CONFIGS/etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf
 
+# Dodanie skryptu disk_info
+ADD bin/disk_info /usr/local/bin/disk_info
+
 # Naprawa uprawnień dla monit-a
 RUN chmod 600 /etc/monit/monitrc
 RUN chmod 600 /etc/monit/monit.pem
@@ -141,5 +144,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
 # Wylaczenie funkcji suspend systemu
 RUN printf "# Disable resume (this system has no swap)\nRESUME=none\n" > /etc/initramfs-tools/conf.d/resume
 
-# Dodanie wersji
+# Dodanie wersji i build
 ADD VERSION /VERSION
+ADD BUILD /BUILD
+
