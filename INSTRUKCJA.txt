@@ -1,0 +1,71 @@
+INSTRUKCJA
+
+
+Pliki konfiguracyjne pobieramy z tego repozytorium z katalogu CONFIGS. To w nim znajdują się pliki, które należy przegrać do katalogu hosta.
+
+WYMAGANIA WSTĘPNE
+
+    Administrator musi mieć dostęp do plików konfiguracyjnych swojej maszyny; Pliki te znajdują się w katalogu CONFIGS/NAZWA_MASZYNY. Dostęp jest przydzielany w projekcie CMD/RSP
+    Przydzielona maszyna musi być odpowiednio skonfigurowana w zakresie bootowania z UEFI (Maszynę uzyskujemy w odpowiednim projekcie - DMW/Nowa maszyna wirtualna lub w projekcie SS)
+    Musi istnieć wpis w DHCP z przypisanym MAC adresem (projekt AF)
+    administrator uruchamianej maszyny musi zapisać wymagane dane w pliku /etc/first_boot (szczegóły w pliku /etc/first_boot)
+    upewnić się że maszyna będzie miała dostęp do zabbix serwera (pomoc w projekcie MON)
+
+
+PRZYGOTOWANIE KATALOGU KONFIGURACYJNEGO
+
+Sklonuj repozytorium git clone https://github.com/bockpl/ubuntu18.04src.git
+
+Skopiuj zawartość katalogu CONFIG z repozytorium do katalogu konfiguracyjnego maszyny.
+
+cp -a CONFIGS/* NAZWA_MASZYNY/
+
+gdzie NAZWA_MASZYNY to nazwa katalogu która jest identyczna z hostname uzyskanym od administratora serwera DHCP/iPXE (projekt AF)
+
+Dokonaj konfiguracji w pliku first_boot zgodnie z informacjami tam zawartymi.
+
+vi NAZWA_MASZYNY/etc/first_boot
+
+
+URUCHOMIENIE MASZYNY - wersja podstawowa
+
+Z menu boot uefi wybrać "UEFI Netowrk BOOT" lub podobnie
+
+W następnym menu wybieramy ubuntu18.04 - master
+
+
+Po poprawnym uruchomieniu otrzymasz mail z informacjami, między innymi z adresm IP.
+
+
+Bardziej zaawansowana konfiguracja
+
+Wskazanie dysku jeżeli inny od /dev/sda np /dev/nvme0n1 (lob podobny)
+
+Dysk musi być wskazany w pliku initrd.conf/etc/bocm/default. Domyślnie jest /dev/sda.
+
+
+Zmiany w układzie partycji
+
+Aby zmienić rozmiary lv należy zmienić konfigurację w pliku partitions.yaml zgodnie z wytycznymi tam zawartymi.
+Plik znajduje się w NAZWA_MASZYNY/initrd.conf/etc/bocm/partitions.yaml
+
+Po dodaniu lub usunięciu lv w pliku partitions.yaml, należy uwzględnić tę zmianę w pliku fstab. Jego położenie to NAZWA_MASZYNY/etc/fstab.
+
+KONFIGURACJA SIECI
+
+Domyślna konfiguracja jest dla jednego iface pobierającego IP z dhcp.
+Konfiguracji dokonujemy w pliku NAZWA_MASZYNY/etc/netplan/config.yaml
+
+
+JESTEM SUPER ADMINEM I SAM SOBIE PORADZĘ
+
+Zamiast kopiować cały katalog CONFIG musisz skopiować tylko:
+boot.ipxe
+initrd.conf/etc/bocm/default
+etc/resolv.conf (link)
+etc/dhcp (katalog z zawartością)
+etc/docker (katalog z zawartością)
+etc/systemd (katalog z zawartością)
+
+Jest to niezbędne minium aby bootowany obraz mógł poprawnie działać.
+Resztę należy skonfigurować wg uznania
