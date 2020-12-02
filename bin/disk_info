@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Konrad Stefański
-# Wersja 0.1
+# Wersja 0.2
 
 # Zwraca informacje o dysku
 # Ścieżka jaką należy podać w pliku default
