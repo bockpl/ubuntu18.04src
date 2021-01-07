@@ -37,7 +37,7 @@ Dokonaj konfiguracji w pliku `first_boot` zgodnie z informacjami tam zawartymi
 
 Z menu boot uefi wybrać "UEFI Netowrk BOOT" lub podobnie
 
-Przy pierwszym uruchonieniu należy wybrać pozycję DiskInfo aby uzyskać informację nt. dysków zainstalowanych w systemie. Z listy należy przepisać wybrany dysk (pierwsza kolumna - PATH) i wpisać do pliku default w polu `export DISKDEV=`. Plik default znajduje się w MOJHOSTNAME/initrd.conf/etc/bocm/default
+Przy pierwszym uruchonieniu należy wybrać pozycję DiskInfo aby uzyskać informację nt. dysków zainstalowanych w systemie. Z listy należy przepisać wybrany dysk (pierwsza kolumna - PATH) i wpisać do pliku partitions.yaml w polu `DISKDEV=`. Plik partistions.yaml znajduje się w MOJHOSTNAME/initrd.conf/etc/bocm/partitions.yaml
 
 Po poprawnym uruchomieniu otrzymasz mail z informacjami.
 
