@@ -17,8 +17,25 @@ Pliki konfiguracyjne pobieramy z tego repozytorium z katalogu CONFIGS. To w nim 
     Szczegóły w pliku `/etc/first_boot`
 - upewnić się że maszyna będzie miała dostęp do zabixx serwera
 
+## PRZYGOTOWANIE KATALOGU KONFIGURACYJNEGO - WERSJA MINIMALNA
 
-## PRZYGOTOWANIE KATALOGU KONFIGURACYJNEGO
+### W tym przypadku wykorzystujemy niezbędne minimum oraz opieramy się na defaltsach (wielkość oraz ilość lvm, itp)
+
+Zaloguj się na maszynę z konfiguiracjami
+`ssh root@192.168.8.144` lub podmontuj udział MFS lokalnie.
+Skopiuj z katalogu CONFIG z repozytorium (tego repozytorium) na zdalny udział pliki
+
+`cp -a CONFIGS/etc/first_boot MOJHOSTNAME/etc/first_boot`
+`cp -a CONFIGS/boot.ipxe MOJHOSTNAME/boot.ipxe`
+
+Dokonaj konfiguracji w pliku `first_boot` zgodnie z informacjami tam zawartymi
+`vi MOJHOSTNAME/etc/first_boot`
+
+PRZEJDŹ DO URUCHOMIENIE MASZYNY
+
+## PRZYGOTOWANIE KATALOGU KONFIGURACYJNEGO - WERSJA DLA PEŁNEJ KONTROLI
+
+### W tym przypadku po zgraniu plików i katalogów możesz dokonać zmian tam gdzie uważasz za słuszne.
 
 Zaloguj się na maszynę z konfiguiracjami 
 `ssh root@192.168.8.144` lub podmontuj udział MFS lokalnie.
